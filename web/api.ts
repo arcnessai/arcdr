@@ -8,6 +8,7 @@ import { t } from "./i18n";
 export type { Agent, AgentStatus, ChatItem, LoadedDisplay, Menu, Snapshot, Space, Suggestion };
 
 export interface Health {
+  build?: string;
   machine: string;
   herdr: string;
   login: string;

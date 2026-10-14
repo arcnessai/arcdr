@@ -80,6 +80,29 @@ function useStored(key: string, initial: string): [string, (v: string) => void] 
 
 type Live = "waiting" | "up" | "lost" | "herdr-down";
 
+declare const __BUILD__: string;
+
+/** A newer build is being served than the one this page runs: offer to load it. */
+function useNewBuild(): boolean {
+  const [stale, setStale] = useState(false);
+  useEffect(() => {
+    const check = () =>
+      void api
+        .health()
+        .then((h) => h.build && h.build !== __BUILD__ && setStale(true))
+        .catch(() => {});
+    const timer = setInterval(check, 60_000);
+    const onShow = () => document.visibilityState === "visible" && check();
+    document.addEventListener("visibilitychange", onShow);
+    check();
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onShow);
+    };
+  }, []);
+  return stale;
+}
+
 function Banner({ live, onRetry }: { live: Live; onRetry: () => void }) {
   if (live === "up" || live === "waiting") return null;
   return (
@@ -365,8 +388,17 @@ function App() {
     const timer = setInterval(load, 30_000);
     return () => clearInterval(timer);
   }, []);
+  const stale = useNewBuild();
   return (
     <DisplayInfo.Provider value={display}>
+      {stale && (
+        <div class="banner update-banner" role="status">
+          {t.newVersion}
+          <button class="link-btn" onClick={() => location.reload()}>
+            {t.reload}
+          </button>
+        </div>
+      )}
       <DisplayContext.Provider value={display?.spec ?? DEFAULT_DISPLAY}>
         <Screens />
       </DisplayContext.Provider>

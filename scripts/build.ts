@@ -17,6 +17,7 @@ const result = await Bun.build({
   naming: "app.js",
   target: "browser",
   minify: true,
+  define: { __BUILD__: JSON.stringify(version) },
 });
 if (!result.success) {
   for (const log of result.logs) console.error(log);
@@ -30,4 +31,5 @@ for (const name of ["style.css", "manifest.webmanifest", "icon.svg", "icon-192.p
   copyFileSync(join(web, name), join(dist, name));
 }
 
+writeFileSync(join(dist, "version.txt"), version);
 console.log(`built dist/ (version ${version})`);

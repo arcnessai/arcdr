@@ -78,7 +78,14 @@ describe("routes", () => {
 
   test("health names the machine and herdr", async () => {
     const res = await setup().call("/api/health");
-    expect(await res.json()).toEqual({ machine: "box", herdr: "0.9.3", login: "me@example.com", spaces: 1, agents: 1 });
+    expect(await res.json()).toEqual({
+      machine: "box",
+      herdr: "0.9.3",
+      login: "me@example.com",
+      spaces: 1,
+      agents: 1,
+      build: "",
+    });
   });
 
   test("an unknown pane is 404 and a malformed one 400", async () => {

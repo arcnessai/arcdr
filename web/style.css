@@ -831,6 +831,15 @@ p {
   text-align: center;
 }
 
+.update-banner {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 14%, var(--bg));
+}
 .banner {
   display: flex;
   align-items: center;

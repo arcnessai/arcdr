@@ -118,6 +118,8 @@ const en = {
   open: "Open",
   close: "Close",
   fileTruncated: "Only the first part is shown.",
+  newVersion: "A new version is ready",
+  reload: "Reload",
   displayHelp: "What mods report to herdr, and where arcdr shows it, is set in ~/.config/arcdr/display.json — see docs/mods.md.",
 };
 
@@ -241,6 +243,8 @@ const ko: Strings = {
   open: "열기",
   close: "닫기",
   fileTruncated: "앞부분만 보입니다.",
+  newVersion: "새 버전이 있습니다",
+  reload: "새로 고침",
   displayHelp:
     "모드가 herdr 에 보낸 값을 arcdr 어디에 어떻게 보일지는 ~/.config/arcdr/display.json 에서 정합니다 — docs/mods.md 참고.",
 };
@@ -363,6 +367,8 @@ const ja: Strings = {
   open: "開く",
   close: "閉じる",
   fileTruncated: "先頭だけ表示しています。",
+  newVersion: "新しいバージョンがあります",
+  reload: "再読み込み",
   displayHelp:
     "モッドが herdr に送った値を arcdr のどこにどう出すかは ~/.config/arcdr/display.json で決めます — docs/mods.md を参照。",
 };
@@ -479,6 +485,8 @@ const zh: Strings = {
   open: "打开",
   close: "关闭",
   fileTruncated: "只显示前面一部分。",
+  newVersion: "有新版本",
+  reload: "刷新",
   displayHelp: "模组报告给 herdr 的值在 arcdr 的哪里、怎样显示，由 ~/.config/arcdr/display.json 决定 — 见 docs/mods.md。",
 };
 

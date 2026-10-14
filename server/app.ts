@@ -241,7 +241,14 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
 
     if (path === "/api/health" && req.method === "GET") {
       const snap = await backend.snapshot();
-      return json(200, { machine, herdr: snap.version, login, spaces: snap.spaces.length, agents: snap.agents.length });
+      // The build this server serves, so an open page can tell it is out of date.
+      let build = "";
+      try {
+        build = (await Bun.file(join(distDir, "version.txt")).text()).trim();
+      } catch {
+        /* not built */
+      }
+      return json(200, { machine, herdr: snap.version, login, spaces: snap.spaces.length, agents: snap.agents.length, build });
     }
     if (path === "/api/events" && req.method === "GET") return events(req);
     if (path === "/api/push" || path.startsWith("/api/push/")) return pushRoute(req, url, path);
@@ -351,6 +358,9 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
         return json(200, saveUpload(uploadsRoot, bytes, name, req.headers.get("content-type") ?? ""));
       } catch (e) {
         const why = (e as Error).message;
+        console.warn(
+          `upload refused (${why}): ${name || "(no name)"}, ${req.headers.get("content-type")}, ${bytes.length} bytes`,
+        );
         if (why === "unsupported") throw new HttpError(415, "unsupported", "images, PDF and text files only");
         if (why === "mismatch") throw new HttpError(415, "mismatch", "the file's content is not what its name says");
         throw e;
