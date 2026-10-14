@@ -10,6 +10,7 @@ import { SnapshotHub } from "./hub";
 import { displayLoader } from "./display";
 import { loadVapid, notification, Notifier, PushStore, webPushDeliver } from "./push";
 import { findTranscript, readFrom, readTail } from "./transcript";
+import { ShortcutStore } from "./shortcuts";
 import { sweepUploads } from "./uploads";
 
 const cfg = loadConfig();
@@ -73,6 +74,7 @@ const handle = createApp({
   gate: (req, remote) => judge({ method: req.method, remote, headers: req.headers }, cfg),
   display,
   uploadsRoot,
+  shortcuts: new ShortcutStore(join(cfg.configDir, "shortcuts.json")),
   push: {
     publicKey: vapid.publicKey,
     get: (endpoint) => pushStore.get(endpoint),

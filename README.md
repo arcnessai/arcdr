@@ -63,7 +63,9 @@ and waits — for an hour.
 | **Screen** | The terminal as it is now, wrapped for a phone |
 | **Session** | Permission-mode and model chips, interrupt, `/compact`, `/context`, `/usage`, rewind, `/clear` |
 | **Sessions** | Start one in any folder (optionally with a first message), resume an earlier conversation, close one |
-| **Attachments** | 📎, paste a screenshot, or drop a file; saved where the agent reads it, sent as `@path` |
+| **＋ tray** | Key buttons, a photo or file, the camera on a phone, and your kept commands — one button left of the message box |
+| **Commands** | Skills and commands you use often, kept on the server so the phone and the laptop show the same; a tap puts one in the box or sends it |
+| **Attachments** | ＋ → photo or file, paste a screenshot, or drop a file; saved where the agent reads it, sent as `@path` |
 | **Notifications** | Web Push when an agent needs you or finishes — or when a mod's value matches your rule |
 | **Looks** | Phone and desktop layouts; themes: Auto, Dracula, Light, Arcness, Arcness Light, Nord; English, 한국어, 日本語, 简体中文 |
 

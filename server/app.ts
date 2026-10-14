@@ -6,6 +6,7 @@ import { SESSION_ID, type PastSession } from "./sessions";
 import type { LoadedDisplay } from "./spec";
 import { contentTypeOf, MAX_UPLOAD_BYTES, saveUpload, uploadPath } from "./uploads";
 import { readPreview } from "./files";
+import { cleanShortcuts, type Shortcut } from "./shortcuts";
 import { validEndpoint, type PushSubscriptionRecord } from "./push";
 import { HerdrError, type Agent, type Snapshot } from "./herdr";
 import { keysToChoose, parseMenu, parseMode } from "./screen";
@@ -45,6 +46,8 @@ export interface AppOptions {
   display: () => LoadedDisplay;
   /** Where files a person adds are kept (server/uploads.ts); without it uploads answer 404. */
   uploadsRoot?: string;
+  /** The commands kept at hand (server/shortcuts.ts); without it the list is empty and cannot change. */
+  shortcuts?: { list(): Shortcut[]; save(list: Shortcut[]): void };
 }
 
 export interface PushApi {
@@ -151,7 +154,7 @@ function trimScreen(text: string): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function createApp({ backend, machine, distDir, gate, push, display, uploadsRoot }: AppOptions) {
+export function createApp({ backend, machine, distDir, gate, push, display, uploadsRoot, shortcuts }: AppOptions) {
   function events(req: Request): Response {
     let close = () => {};
     const stream = new ReadableStream<Uint8Array>({
@@ -253,6 +256,14 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
     if (path === "/api/events" && req.method === "GET") return events(req);
     if (path === "/api/push" || path.startsWith("/api/push/")) return pushRoute(req, url, path);
     if (path === "/api/display" && req.method === "GET") return json(200, display());
+    if (path === "/api/shortcuts" && req.method === "GET") return json(200, { shortcuts: shortcuts?.list() ?? [] });
+    if (path === "/api/shortcuts" && req.method === "POST") {
+      if (!shortcuts) throw new HttpError(404, "no_shortcuts", "this server keeps no shortcuts");
+      const got = cleanShortcuts((await body(req)).shortcuts);
+      if ("error" in got) throw new HttpError(400, "bad_shortcuts", got.error);
+      shortcuts.save(got.list);
+      return json(200, { shortcuts: got.list });
+    }
     if (path === "/api/sessions/past" && req.method === "GET") {
       const cwd = url.searchParams.get("cwd") ?? "";
       if (!cwd.startsWith("/") || cwd.length > 1000) throw new HttpError(400, "bad_cwd", "cwd must be an absolute path");

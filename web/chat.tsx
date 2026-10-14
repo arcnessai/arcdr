@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { api, ApiError, type Agent, type ChatItem, type Menu, type Suggestion } from "./api";
+import { api, ApiError, type Agent, type ChatItem, type Menu, type Shortcut, type Suggestion } from "./api";
 import { STATUS_LABEL } from "./format";
 import * as I from "./icons";
 import { AgentLine, Badge, StatusDot } from "./lists";
@@ -11,6 +11,7 @@ import { Linked } from "./linkify";
 import { UserText } from "./usertext";
 import { Markdown } from "./markdown";
 import { tokenAt, type Token } from "./token";
+import { Tray } from "./shortcuts";
 import { t } from "./i18n";
 
 type Shown = Exclude<ChatItem, { kind: "tool-error" } | { kind: "queue" } | { kind: "meta" } | { kind: "todos" }>;
@@ -557,6 +558,8 @@ function Composer(props: {
   const area = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const picker = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  const [trayOpen, setTrayOpen] = useState(false);
   const [uploading, setUploading] = useState(0);
   const [dragging, setDragging] = useState(false);
 
@@ -620,6 +623,30 @@ function Composer(props: {
     }
   };
 
+  const takeFiles = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    void addFiles([...(input.files ?? [])]);
+    input.value = "";
+  };
+
+  /** A kept command: sent as it is, or put in the box for the rest of the words. */
+  const applyShortcut = (s: Shortcut) => {
+    setTrayOpen(false);
+    navigator.vibrate?.(8);
+    if (s.send) {
+      void props.onSend(s.text);
+      return;
+    }
+    const insert = s.text.startsWith("/") && !/\s$/.test(s.text) ? `${s.text} ` : s.text;
+    if (text.trim()) return insertAtCaret(insert);
+    setText(insert);
+    requestAnimationFrame(() => {
+      area.current?.focus();
+      area.current?.setSelectionRange(insert.length, insert.length);
+      setCaret(insert.length);
+    });
+  };
+
   const accept = (s: Suggestion) => {
     if (!token) return;
     // A directory keeps the list open for the next level; anything else ends with a space.
@@ -639,6 +666,7 @@ function Composer(props: {
   const submit = async () => {
     const body = text.trim();
     if (!body || sending) return;
+    setTrayOpen(false);
     setSending(true);
     const ok = await props.onSend(body);
     setSending(false);
@@ -650,120 +678,148 @@ function Composer(props: {
 
   const blocked = props.agent.status === "blocked";
   return (
-    <form
-      class={`composer${dragging ? " is-dragging" : ""}`}
-      onDragOver={(e) => {
-        if (![...(e.dataTransfer?.types ?? [])].includes("Files")) return;
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        setDragging(false);
-        const files = [...(e.dataTransfer?.files ?? [])];
-        if (files.length === 0) return;
-        e.preventDefault();
-        void addFiles(files);
-      }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submit();
-      }}
-    >
-      {uploading > 0 && <p class="uploading">{t.uploading(uploading)}</p>}
-      {open && (
-        <ul class="suggest" role="listbox" aria-label={t.suggestions} ref={list}>
-          {suggestions.map((s, i) => (
-            <li key={s.value}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={i === active}
-                // Keep the focus (and the phone keyboard) in the text box.
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => accept(s)}
-              >
-                <span class={`sg-value sg-${s.kind}`}>{s.value}</span>
-                {s.detail && <span class="sg-detail">{s.detail}</span>}
-                {s.kind !== "file" && s.kind !== "dir" && <span class="sg-kind">{t.kind[s.kind]}</span>}
-              </button>
-            </li>
-          ))}
-        </ul>
+    <>
+      {trayOpen && (
+        <Tray
+          pane={props.agent.pane}
+          keysOpen={props.keysOpen}
+          draft={text}
+          onKeys={() => {
+            props.onKeys();
+            setTrayOpen(false);
+          }}
+          onAttach={() => {
+            picker.current?.click();
+            setTrayOpen(false);
+          }}
+          onCamera={
+            COARSE
+              ? () => {
+                  camera.current?.click();
+                  setTrayOpen(false);
+                }
+              : null
+          }
+          onUse={applyShortcut}
+          onError={props.onError}
+        />
       )}
-      <button type="button" class="icon-btn" aria-pressed={props.keysOpen} aria-label={t.keyButtons} onClick={props.onKeys}>
-        <I.Keyboard />
-      </button>
-      <button type="button" class="icon-btn" aria-label={t.attach} title={t.attach} onClick={() => picker.current?.click()}>
-        <I.Clip />
-      </button>
-      <input
-        ref={picker}
-        type="file"
-        multiple
-        hidden
-        accept="image/*,application/pdf,text/plain,text/markdown,text/csv,application/json,.md,.log,.csv,.json,.txt"
-        onChange={(e) => {
-          const input = e.target as HTMLInputElement;
-          void addFiles([...(input.files ?? [])]);
-          input.value = "";
+      <form
+        class={`composer${dragging ? " is-dragging" : ""}`}
+        onDragOver={(e) => {
+          if (![...(e.dataTransfer?.types ?? [])].includes("Files")) return;
+          e.preventDefault();
+          setDragging(true);
         }}
-      />
-      <textarea
-        ref={area}
-        rows={1}
-        value={text}
-        enterkeyhint={COARSE ? "enter" : "send"}
-        placeholder={blocked ? t.typeRaw : t.message}
-        aria-autocomplete="list"
-        aria-expanded={open}
-        onInput={(e) => {
-          setText((e.target as HTMLTextAreaElement).value);
-          syncCaret();
-        }}
-        onClick={syncCaret}
-        onPaste={(e) => {
-          // A copied screenshot arrives as a file; text pastes go on as usual.
-          const files = [...(e.clipboardData?.files ?? [])];
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          setDragging(false);
+          const files = [...(e.dataTransfer?.files ?? [])];
           if (files.length === 0) return;
           e.preventDefault();
           void addFiles(files);
         }}
-        onKeyUp={(e) => {
-          if (!["ArrowUp", "ArrowDown", "Tab", "Enter", "Escape"].includes(e.key)) syncCaret();
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
         }}
-        onKeyDown={(e) => {
-          const composing = e.isComposing || e.keyCode === 229;
-          if (open && !composing) {
-            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-              e.preventDefault();
-              const step = e.key === "ArrowDown" ? 1 : -1;
-              setActive((a) => (a + step + suggestions.length) % suggestions.length);
-              return;
-            }
-            if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
-              e.preventDefault();
-              accept(suggestions[active]!);
-              return;
-            }
-            if (e.key === "Escape") {
-              e.preventDefault();
-              setDismissed(tokenKey);
-              return;
-            }
-          }
-          // Desktop: Enter sends, Shift+Enter breaks the line. A phone keeps Enter for new lines.
-          // isComposing / 229: the Enter that commits a Hangul syllable must not send.
-          if (e.key === "Enter" && !e.shiftKey && !COARSE && !composing) {
+      >
+        {uploading > 0 && <p class="uploading">{t.uploading(uploading)}</p>}
+        {open && (
+          <ul class="suggest" role="listbox" aria-label={t.suggestions} ref={list}>
+            {suggestions.map((s, i) => (
+              <li key={s.value}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={i === active}
+                  // Keep the focus (and the phone keyboard) in the text box.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => accept(s)}
+                >
+                  <span class={`sg-value sg-${s.kind}`}>{s.value}</span>
+                  {s.detail && <span class="sg-detail">{s.detail}</span>}
+                  {s.kind !== "file" && s.kind !== "dir" && <span class="sg-kind">{t.kind[s.kind]}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="button"
+          class="icon-btn plus-btn"
+          aria-expanded={trayOpen}
+          aria-label={t.extras}
+          title={t.extras}
+          onClick={() => setTrayOpen(!trayOpen)}
+        >
+          <I.Plus size={22} />
+        </button>
+        <input
+          ref={picker}
+          type="file"
+          multiple
+          hidden
+          accept="image/*,application/pdf,text/plain,text/markdown,text/csv,application/json,.md,.log,.csv,.json,.txt"
+          onChange={takeFiles}
+        />
+        {COARSE && <input ref={camera} type="file" hidden accept="image/*" capture="environment" onChange={takeFiles} />}
+        <textarea
+          ref={area}
+          rows={1}
+          value={text}
+          enterkeyhint={COARSE ? "enter" : "send"}
+          placeholder={blocked ? t.typeRaw : t.message}
+          aria-autocomplete="list"
+          aria-expanded={open}
+          onInput={(e) => {
+            setText((e.target as HTMLTextAreaElement).value);
+            syncCaret();
+          }}
+          onClick={syncCaret}
+          onPaste={(e) => {
+            // A copied screenshot arrives as a file; text pastes go on as usual.
+            const files = [...(e.clipboardData?.files ?? [])];
+            if (files.length === 0) return;
             e.preventDefault();
-            void submit();
-          }
-        }}
-      />
-      <button type="submit" class="send-btn" disabled={!text.trim() || sending} aria-label={t.send}>
-        <I.Send />
-      </button>
-    </form>
+            void addFiles(files);
+          }}
+          onKeyUp={(e) => {
+            if (!["ArrowUp", "ArrowDown", "Tab", "Enter", "Escape"].includes(e.key)) syncCaret();
+          }}
+          onKeyDown={(e) => {
+            const composing = e.isComposing || e.keyCode === 229;
+            if (open && !composing) {
+              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                e.preventDefault();
+                const step = e.key === "ArrowDown" ? 1 : -1;
+                setActive((a) => (a + step + suggestions.length) % suggestions.length);
+                return;
+              }
+              if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+                e.preventDefault();
+                accept(suggestions[active]!);
+                return;
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setDismissed(tokenKey);
+                return;
+              }
+            }
+            // Desktop: Enter sends, Shift+Enter breaks the line. A phone keeps Enter for new lines.
+            // isComposing / 229: the Enter that commits a Hangul syllable must not send.
+            if (e.key === "Enter" && !e.shiftKey && !COARSE && !composing) {
+              e.preventDefault();
+              void submit();
+            }
+          }}
+        />
+        <button type="submit" class="send-btn" disabled={!text.trim() || sending} aria-label={t.send}>
+          <I.Send />
+        </button>
+      </form>
+    </>
   );
 }
 

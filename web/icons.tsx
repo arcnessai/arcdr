@@ -75,6 +75,34 @@ export const Clip = (p: Props) => (
     <path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.4 3.4 0 0 1 4.8 4.8l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9" />
   </Svg>
 );
+export const Image = (p: Props) => (
+  <Svg {...p}>
+    <rect x="3" y="4" width="18" height="16" rx="2.5" />
+    <circle cx="9" cy="9.5" r="1.6" />
+    <path d="M21 16l-5-5-8 9" />
+  </Svg>
+);
+export const Camera = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </Svg>
+);
+export const Bolt = (p: Props) => (
+  <Svg {...p}>
+    <path d="M13 3L5 14h6l-1 7 8-11h-6z" />
+  </Svg>
+);
+export const Up = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 19V5M6 11l6-6 6 6" />
+  </Svg>
+);
+export const X = (p: Props) => (
+  <Svg {...p}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </Svg>
+);
 export const Gear = (p: Props) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="3" />

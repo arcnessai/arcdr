@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { createApp, type Backend } from "./app";
 import type { Agent, Snapshot } from "./herdr";
 import type { PushSubscriptionRecord } from "./push";
+import type { Shortcut } from "./shortcuts";
 
 const agent: Agent = {
   pane: "w1:p1",
@@ -22,6 +23,7 @@ const MENU = "Do you want to proceed?\n❯ 1. Yes\n  2. No\n";
 function setup() {
   const keys: string[][] = [];
   const saved: PushSubscriptionRecord[] = [];
+  let shortcuts: Shortcut[] = [];
   const snapshot: Snapshot = {
     version: "0.9.3",
     spaces: [{ id: "w1", number: 1, label: "s", status: "blocked", tokens: {} }],
@@ -58,6 +60,7 @@ function setup() {
       remove: () => {},
       test: async () => {},
     },
+    shortcuts: { list: () => shortcuts, save: (list) => void (shortcuts = list) },
   });
   const call = (path: string, init: RequestInit = {}) =>
     handle(
@@ -123,5 +126,14 @@ describe("routes", () => {
     expect(saved).toEqual([
       { endpoint: "https://fcm.googleapis.com/fcm/send/x", keys, lang: "en", blocked: true, done: false, custom: true },
     ]);
+  });
+
+  test("shortcuts are saved only whole and valid, and read back as saved", async () => {
+    const { call, post } = setup();
+    expect((await post("/api/shortcuts", { shortcuts: [{ text: "" }] })).status).toBe(400);
+    expect(await (await call("/api/shortcuts")).json()).toEqual({ shortcuts: [] });
+    const res = await post("/api/shortcuts", { shortcuts: [{ text: "/compact", send: true }] });
+    expect(res.status).toBe(200);
+    expect(await (await call("/api/shortcuts")).json()).toEqual({ shortcuts: [{ text: "/compact", label: "", send: true }] });
   });
 });

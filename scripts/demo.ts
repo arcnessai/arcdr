@@ -5,6 +5,7 @@
 //   bun run demo
 import { join } from "node:path";
 import { createApp, type Backend } from "../server/app";
+import type { Shortcut } from "../server/shortcuts";
 import type { Agent, Snapshot } from "../server/herdr";
 import { filterSlash, slashCommands } from "../server/complete";
 import { parseMenu } from "../server/screen";
@@ -352,6 +353,13 @@ const display: DisplaySpec = {
   },
 };
 
+// Kept in memory: the demo writes nothing to disk.
+let shortcuts: Shortcut[] = [
+  { text: "/compact", label: "", send: true },
+  { text: "/start ", label: "next unit", send: false },
+  { text: "Summarise what changed and what is left.", label: "status", send: true },
+];
+
 const handle = createApp({
   backend,
   machine: "demo-laptop",
@@ -359,6 +367,10 @@ const handle = createApp({
   // The demo listens on 127.0.0.1 only and holds nothing real.
   gate: () => ({ ok: true, login: "demo@example.com" }),
   display: () => ({ spec: display, origin: "file", errors: [] }),
+  shortcuts: {
+    list: () => shortcuts,
+    save: (list) => void (shortcuts = list),
+  },
 });
 
 Bun.serve({

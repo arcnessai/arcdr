@@ -1,11 +1,12 @@
 import type { Agent, AgentStatus, Snapshot, Space } from "../server/herdr";
 import type { Suggestion } from "../server/complete";
 import type { Menu } from "../server/screen";
+import type { Shortcut } from "../server/shortcuts";
 import type { LoadedDisplay } from "../server/spec";
 import type { ChatItem, Chunk } from "../server/transcript";
 import { t } from "./i18n";
 
-export type { Agent, AgentStatus, ChatItem, LoadedDisplay, Menu, Snapshot, Space, Suggestion };
+export type { Agent, AgentStatus, ChatItem, LoadedDisplay, Menu, Shortcut, Snapshot, Space, Suggestion };
 
 export interface Health {
   build?: string;
@@ -84,6 +85,8 @@ export const api = {
   pushRemove: (endpoint: string) => post("/api/push/remove", { endpoint }),
   pushTest: (endpoint: string) => post("/api/push/test", { endpoint }),
   display: () => request<LoadedDisplay>("/api/display"),
+  shortcuts: () => request<{ shortcuts: Shortcut[] }>("/api/shortcuts"),
+  saveShortcuts: (shortcuts: Shortcut[]) => post<{ shortcuts: Shortcut[] }>("/api/shortcuts", { shortcuts }),
   startSession: (b: { space: string; cwd: string; label: string; prompt: string; resume: string | null }) =>
     request<{ pane: string; sent: boolean }>("/api/sessions", { method: "POST", body: JSON.stringify(b) }, 120_000),
   close: (pane: string) => post(agentPath(pane, "close"), {}),
