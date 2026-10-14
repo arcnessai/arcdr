@@ -4,6 +4,8 @@
 #   scripts/setup.sh status      what is done and what is not; changes nothing
 #   scripts/setup.sh all         every step in order, skipping what is already done
 #   scripts/setup.sh <step>      one step: check tailscale bun build config https service verify
+#   scripts/setup.sh mod         install the starter mod arcdr-report into Claude Code (not part of all: ask first)
+#   scripts/setup.sh unmod       uninstall it
 #   scripts/setup.sh uninstall   stop and remove the service and its tailnet address (--purge: the config too)
 #
 # Exit codes: 0 done · 1 failed · 10 a person has to act first (the last line says what); run it again after.
@@ -134,7 +136,7 @@ step_build() {
   bin="$(bun_bin)"
   [ -n "$bin" ] || die "bun is missing — run: scripts/setup.sh bun"
   (cd "$ROOT" && "$bin" install --frozen-lockfile >/dev/null) || die "bun install failed"
-  (cd "$ROOT" && "$bin" test >/dev/null 2>&1) || die "tests failed — run 'bun test' in $ROOT to see which"
+  (cd "$ROOT" && "$bin" run test >/dev/null 2>&1) || die "tests failed — run 'bun run test' in $ROOT to see which"
   (cd "$ROOT" && "$bin" run build >/dev/null 2>&1) || die "build failed"
   ok "installed, tests pass, dist/ built"
 }
@@ -247,6 +249,24 @@ step_status() {
   [ -f "$ENV_FILE" ] && ok "config $ENV_FILE" || no "no config"
   systemctl --user is-active --quiet arcdr.service 2>/dev/null && ok "service running" || no "service not running"
   [ "$(served_target)" = "$(backend)" ] && ok "https://$(public_host)" || no "no tailnet address"
+  command -v claude >/dev/null && mod_installed && ok "starter mod arcdr-report" || note "starter mod arcdr-report not installed (optional: scripts/setup.sh mod)"
+}
+
+mod_installed() { claude plugin list --json 2>/dev/null | grep -q '"arcdr-report@arcdr"'; }
+
+step_mod() {
+  echo "mod — arcdr-report, so the phone shows what each session is doing"
+  command -v claude >/dev/null || die "claude (Claude Code) is not on PATH"
+  if mod_installed; then ok "installed"; return; fi
+  claude plugin marketplace add "$ROOT" >/dev/null 2>&1 || claude plugin marketplace list 2>/dev/null | grep -q arcdr ||
+    die "could not add $ROOT as a plugin marketplace"
+  claude plugin install arcdr-report@arcdr >/dev/null || die "could not install arcdr-report@arcdr"
+  ok "installed — new Claude Code sessions load it; running ones after /reload-plugins"
+}
+
+step_unmod() {
+  echo "unmod — remove the starter mod"
+  if mod_installed; then claude plugin uninstall arcdr-report@arcdr >/dev/null && ok "removed"; else ok "not installed"; fi
 }
 
 step_uninstall() {
@@ -276,6 +296,8 @@ case "${1:-status}" in
   https) step_https ;;
   service) step_service ;;
   verify) step_verify ;;
+  mod) step_mod ;;
+  unmod) step_unmod ;;
   uninstall) step_uninstall "${2:-}" ;;
   all)
     step_check

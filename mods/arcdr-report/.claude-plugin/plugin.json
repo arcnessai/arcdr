@@ -1,0 +1,8 @@
+{
+  "name": "arcdr-report",
+  "version": "0.1.0",
+  "description": "Reports what each Claude Code session is doing to herdr — the tool at work, the to-do list, context, cost, branch and usage limits — so arcdr can show it on a phone",
+  "author": {
+    "name": "Arcness"
+  }
+}

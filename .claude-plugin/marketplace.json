@@ -1,0 +1,6 @@
+{
+  "name": "arcdr",
+  "description": "Claude Code mods that report to herdr, for arcdr to show on a phone",
+  "owner": { "name": "Arcness" },
+  "plugins": [{ "name": "arcdr-report", "source": "./mods/arcdr-report" }]
+}
