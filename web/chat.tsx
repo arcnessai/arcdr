@@ -558,6 +558,7 @@ function Composer(props: {
   const area = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const picker = useRef<HTMLInputElement>(null);
+  const photos = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
   const [trayOpen, setTrayOpen] = useState(false);
   const [uploading, setUploading] = useState(0);
@@ -688,7 +689,11 @@ function Composer(props: {
             props.onKeys();
             setTrayOpen(false);
           }}
-          onAttach={() => {
+          onPhotos={() => {
+            photos.current?.click();
+            setTrayOpen(false);
+          }}
+          onFiles={() => {
             picker.current?.click();
             setTrayOpen(false);
           }}
@@ -763,6 +768,8 @@ function Composer(props: {
           accept="image/*,application/pdf,text/plain,text/markdown,text/csv,application/json,.md,.log,.csv,.json,.txt"
           onChange={takeFiles}
         />
+        {/* Images alone: Android then opens its photo picker (the gallery) instead of asking which app to use. */}
+        <input ref={photos} type="file" multiple hidden accept="image/*" onChange={takeFiles} />
         {COARSE && <input ref={camera} type="file" hidden accept="image/*" capture="environment" onChange={takeFiles} />}
         <textarea
           ref={area}

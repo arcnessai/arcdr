@@ -2160,7 +2160,7 @@ a.link code {
 .tray-tiles {
   max-width: 420px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   gap: 8px;
 }
 .tile {

@@ -65,7 +65,7 @@ const move = <T,>(list: T[], from: number, to: number): T[] => {
 };
 
 /**
- * What the ＋ beside the message box opens: the key buttons, a photo or file, the camera on a phone, and
+ * What the ＋ beside the message box opens: the key buttons, photos, the camera on a phone, files, and
  * the commands this machine keeps — each one a tap from the message box or from being sent.
  */
 export function Tray(props: {
@@ -74,7 +74,8 @@ export function Tray(props: {
   /** The message box's text, offered as the new command's text. */
   draft: string;
   onKeys: () => void;
-  onAttach: () => void;
+  onPhotos: () => void;
+  onFiles: () => void;
   onCamera: (() => void) | null;
   onUse: (s: Shortcut) => void;
   onError: (m: string) => void;
@@ -98,9 +99,9 @@ export function Tray(props: {
           <I.Keyboard size={22} />
           <span>{t.keyButtons}</span>
         </button>
-        <button type="button" class="tile" onClick={props.onAttach}>
+        <button type="button" class="tile" onClick={props.onPhotos}>
           <I.Image size={22} />
-          <span>{t.photoFile}</span>
+          <span>{t.photos}</span>
         </button>
         {props.onCamera && (
           <button type="button" class="tile" onClick={props.onCamera}>
@@ -108,6 +109,10 @@ export function Tray(props: {
             <span>{t.camera}</span>
           </button>
         )}
+        <button type="button" class="tile" onClick={props.onFiles}>
+          <I.Clip size={22} />
+          <span>{t.files}</span>
+        </button>
       </div>
 
       <div class="tray-section">

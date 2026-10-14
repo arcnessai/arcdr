@@ -106,12 +106,12 @@ The full format, every place, and a worked example: **[docs/mods.md](docs/mods.m
 <tr>
 <td width="33%"><img src="docs/images/phone-agents.png" alt="Agent list" /></td>
 <td width="33%"><img src="docs/images/phone-question.png" alt="A question with choices" /></td>
-<td width="33%"><img src="docs/images/phone-tray.png" alt="The ＋ tray: key buttons, photo or file, camera, saved commands" /></td>
+<td width="33%"><img src="docs/images/phone-tray.png" alt="The ＋ tray: key buttons, photos, camera, files, saved commands" /></td>
 </tr>
 <tr>
 <td><b>Every session at a glance</b><br/>Spaces, agents, status, the stage your mod reports.</td>
 <td><b>Answer with a tap</b><br/>Permission prompts, questions, plan approvals, folder trust — as buttons. The screen is read again right before the keys go out.</td>
-<td><b>＋ for everything else</b><br/>Key buttons, a photo or the camera, and the skills and commands you use most, one tap away.</td>
+<td><b>＋ for everything else</b><br/>Key buttons, photos from the gallery, the camera, files, and the skills and commands you use most.</td>
 </tr>
 </table>
 
@@ -124,7 +124,7 @@ The full format, every place, and a worked example: **[docs/mods.md](docs/mods.m
 | **Sending** | Sending → typed in → queued (while the agent works) → received; *send queued now*; a draft kept per session; Korean IME–safe |
 | **Completion** | `/` for built-in commands, skills and your mods' commands; `@` for files |
 | **Commands** | Skills and commands you use often, kept on the server so the phone and the laptop show the same; a tap puts one in the box or sends it |
-| **Attachments** | ＋ → photo or file (camera on a phone), paste a screenshot, or drop a file; saved where the agent reads it, sent as `@path` |
+| **Attachments** | ＋ → Photos (straight to the gallery), Camera (on a phone) or Files; paste a screenshot, or drop a file; saved where the agent reads it, sent as `@path` |
 | **Changes** | Each edit as a diff, every file the conversation touched, a file viewer |
 | **Keys** | Esc, arrows, Tab, ⇧Tab, Enter; Ctrl+C is left out on purpose (twice exits Claude Code) |
 | **Screen** | The terminal as it is now, wrapped for a phone |
