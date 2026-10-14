@@ -26,7 +26,7 @@
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     color-scheme: light;
     --bg: #f6f6f9;
     --bg-elev: #ffffff;
@@ -49,6 +49,105 @@
   }
 }
 
+/* Themes picked in Settings (web/theme.ts sets data-theme); without a pick the system's choice above holds. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f6f9;
+  --bg-elev: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #eeeef4;
+  --line: #e3e3eb;
+  --line-strong: #cdced9;
+  --text: #1b1c24;
+  --muted: #555769;
+  --dim: #8a8c9e;
+  --cyan: #0e7490;
+  --purple: #6d28d9;
+  --yellow: #a16207;
+  --green: #15803d;
+  --orange: #c2410c;
+  --pink: #be185d;
+  --red: #dc2626;
+  --accent-ink: #ffffff;
+  --user-bubble: #ece6fd;
+}
+
+/* Arcness — the aurora palette of the Arcness workspace: navy canvas, blue accent, a soft light at the top. */
+:root[data-theme="arcness"] {
+  color-scheme: dark;
+  --bg: #0a101b;
+  --bg-image:
+    radial-gradient(720px 420px at 12% -8%, rgb(70 130 220 / 0.16), transparent 62%),
+    radial-gradient(560px 380px at 92% 4%, rgb(138 180 248 / 0.12), transparent 60%);
+  --bg-elev: #0e1624;
+  --surface: #121a29;
+  --surface-2: #182335;
+  --line: #1c2638;
+  --line-strong: #2c384d;
+  --text: #e8edf5;
+  --muted: #a5b1c6;
+  --dim: #7d889d;
+  --cyan: #7fb0f2;
+  --purple: #a3adff;
+  --yellow: #f5ca7d;
+  --green: #78dba3;
+  --orange: #f2a65e;
+  --pink: #f29ac4;
+  --red: #ff9a9a;
+  --accent: #5b97e8;
+  --accent-ink: #0a101b;
+  --user-bubble: #1a2c47;
+}
+
+:root[data-theme="arcness-light"] {
+  color-scheme: light;
+  --bg: #f2f5fa;
+  --bg-image:
+    radial-gradient(720px 420px at 12% -8%, rgb(29 91 171 / 0.14), transparent 62%),
+    radial-gradient(560px 380px at 92% 4%, rgb(138 180 248 / 0.22), transparent 60%);
+  --bg-elev: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #eef2f8;
+  --line: #e1e7f0;
+  --line-strong: #c9d2df;
+  --text: #16213a;
+  --muted: #4d5b77;
+  --dim: #7a8599;
+  --cyan: #1a539c;
+  --purple: #4f5bd5;
+  --yellow: #96600a;
+  --green: #1f7a47;
+  --orange: #b4560f;
+  --pink: #b8357a;
+  --red: #c02f2f;
+  --accent: #1d5bab;
+  --accent-ink: #ffffff;
+  --user-bubble: #e2ecfa;
+}
+
+:root[data-theme="nord"] {
+  color-scheme: dark;
+  --bg: #2b303b;
+  --bg-elev: #2e3440;
+  --surface: #353c4a;
+  --surface-2: #3b4252;
+  --line: #3f4758;
+  --line-strong: #4c566a;
+  --text: #eceff4;
+  --muted: #c3cad6;
+  --dim: #8c96a8;
+  --cyan: #88c0d0;
+  --purple: #b48ead;
+  --yellow: #ebcb8b;
+  --green: #a3be8c;
+  --orange: #d08770;
+  --pink: #c895bf;
+  --red: #e0757f;
+  --accent: #88c0d0;
+  --accent-ink: #2e3440;
+  --user-bubble: #3d4a5e;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -57,7 +156,11 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: var(--bg);
+  /* Separate properties: a shorthand with a colour and several gradient layers is invalid, and dropped whole. */
+  background-color: var(--bg);
+  background-image: var(--bg-image, none);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--text);
   font: 15px/1.5 var(--font);
   -webkit-tap-highlight-color: transparent;
@@ -1822,4 +1925,39 @@ a.link code {
     scrollbar-width: thin;
     scrollbar-color: var(--line-strong) transparent;
   }
+}
+
+.themes {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--bg);
+  text-align: left;
+  cursor: pointer;
+}
+.theme-option[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.theme-swatch {
+  display: flex;
+  height: 26px;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.theme-swatch span {
+  flex: 1;
+}
+.theme-name {
+  font-size: 13px;
+  font-weight: 650;
 }

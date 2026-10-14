@@ -3,6 +3,7 @@ import type { Health } from "./api";
 import { t } from "./i18n";
 import { LangPicker } from "./langpicker";
 import { DisplayInfo } from "./parts";
+import { currentTheme, setTheme, THEMES, type ThemeId } from "./theme";
 import { useContext } from "preact/hooks";
 import { readPush, savePrefs, sendTest, turnOff, turnOn, type PushState } from "./push";
 
@@ -79,6 +80,35 @@ function Notifications() {
   );
 }
 
+function ThemeSection() {
+  const [picked, setPicked] = useState<ThemeId>(currentTheme());
+  return (
+    <section class="settings-card">
+      <h2>{t.theme}</h2>
+      <div class="themes">
+        {THEMES.map((th) => (
+          <button
+            key={th.id}
+            class="theme-option"
+            aria-pressed={picked === th.id}
+            onClick={() => {
+              setTheme(th.id);
+              setPicked(th.id);
+            }}
+          >
+            <span class="theme-swatch" aria-hidden="true">
+              {th.swatch.map((c) => (
+                <span key={c} style={{ background: c }} />
+              ))}
+            </span>
+            <span class="theme-name">{t.themeNames[th.id]}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function DisplaySection() {
   const info = useContext(DisplayInfo);
   return (
@@ -102,6 +132,7 @@ export function SettingsView({ health }: { health: Health | null }) {
         <h2>{t.notifications}</h2>
         <Notifications />
       </section>
+      <ThemeSection />
       <DisplaySection />
       <section class="settings-card">
         <h2>{t.language}</h2>

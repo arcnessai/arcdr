@@ -97,6 +97,15 @@ const en = {
   closeSession: "Close this session",
   confirmClear: "Start a new conversation? The current one can be resumed later.",
   confirmClose: "Close this session? Its conversation stays and can be resumed from New session.",
+  theme: "Theme",
+  themeNames: {
+    auto: "Auto",
+    dracula: "Dracula",
+    light: "Light",
+    arcness: "Arcness",
+    "arcness-light": "Arcness Light",
+    nord: "Nord",
+  },
   displayHelp: "What mods report to herdr, and where arcdr shows it, is set in ~/.config/arcdr/display.json — see docs/mods.md.",
 };
 
@@ -199,6 +208,15 @@ const ko: Strings = {
   closeSession: "이 세션 닫기",
   confirmClear: "새 대화를 시작할까요? 지금 대화는 나중에 이어 할 수 있습니다.",
   confirmClose: "이 세션을 닫을까요? 대화 기록은 남아서 「새 세션」에서 이어 할 수 있습니다.",
+  theme: "테마",
+  themeNames: {
+    auto: "자동",
+    dracula: "Dracula",
+    light: "밝게",
+    arcness: "Arcness",
+    "arcness-light": "Arcness 밝게",
+    nord: "Nord",
+  },
   displayHelp:
     "모드가 herdr 에 보낸 값을 arcdr 어디에 어떻게 보일지는 ~/.config/arcdr/display.json 에서 정합니다 — docs/mods.md 참고.",
 };
@@ -300,6 +318,15 @@ const ja: Strings = {
   closeSession: "このセッションを閉じる",
   confirmClear: "新しい会話を始めますか？今の会話は後で再開できます。",
   confirmClose: "このセッションを閉じますか？会話の記録は残り、「新しいセッション」から再開できます。",
+  theme: "テーマ",
+  themeNames: {
+    auto: "自動",
+    dracula: "Dracula",
+    light: "ライト",
+    arcness: "Arcness",
+    "arcness-light": "Arcness ライト",
+    nord: "Nord",
+  },
   displayHelp:
     "モッドが herdr に送った値を arcdr のどこにどう出すかは ~/.config/arcdr/display.json で決めます — docs/mods.md を参照。",
 };
@@ -401,6 +428,15 @@ const zh: Strings = {
   closeSession: "关闭此会话",
   confirmClear: "开始新对话吗？当前对话之后可以继续。",
   confirmClose: "关闭此会话吗？对话记录会保留，可在「新会话」中继续。",
+  theme: "主题",
+  themeNames: {
+    auto: "自动",
+    dracula: "Dracula",
+    light: "浅色",
+    arcness: "Arcness",
+    "arcness-light": "Arcness 浅色",
+    nord: "Nord",
+  },
   displayHelp: "模组报告给 herdr 的值在 arcdr 的哪里、怎样显示，由 ~/.config/arcdr/display.json 决定 — 见 docs/mods.md。",
 };
 

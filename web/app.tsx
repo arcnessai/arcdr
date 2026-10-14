@@ -1,4 +1,5 @@
 import { render, type ComponentChildren } from "preact";
+import "./theme";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { api, type Health, type LoadedDisplay, type Snapshot } from "./api";
 import { DisplayContext, DisplayInfo } from "./parts";
