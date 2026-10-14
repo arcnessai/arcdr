@@ -8,7 +8,8 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write server web scripts/*.ts",
-    "check": "prettier --check server web scripts/*.ts && tsc --noEmit && bun test"
+    "check": "prettier --check server web scripts/*.ts && tsc --noEmit && bun test",
+    "demo": "bun run scripts/build.ts && bun run scripts/demo.ts"
   },
   "dependencies": {
     "preact": "11.0.1",

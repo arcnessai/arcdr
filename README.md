@@ -1,59 +1,198 @@
+<div align="center">
+
+<img src="web/icon.svg" width="76" alt="" />
+
 # arcdr
 
-herdr 에서 돌고 있는 에이전트들을 폰이나 다른 PC 의 브라우저에서 보고 답하는 웹앱이다.
+**herdr in your pocket.** Watch every Claude Code session herdr runs on your computer, answer its questions,
+and keep it moving — from your phone or any other computer, over your own Tailscale network.
 
-- **연결** — 이 PC 에 Tailscale 로 닿는지 보여 준다. 끊겨 있으면 폰에서 Tailscale 앱을 연다.
-- **spaces → 에이전트 목록** — herdr 왼쪽 목록과 같은 모양이다. 트리 번호, 상태, 탭 이름, 단계(`$tree` · `$stage` 토큰)를 그대로 보여 준다.
-- **대화** — Claude Code 대화 기록(`~/.claude/projects/*/<세션>.jsonl`)을 채팅처럼 그린다. 연달아 쓴 도구는 한 줄로 접는다.
-- **선택지** — 권한 확인이나 질문 메뉴가 뜨면 버튼으로 고른다. 누르기 직전에 화면을 다시 읽어서 같은 메뉴일 때만 화살표와 Enter 를 보낸다.
-- **화면** — 에이전트 터미널에 지금 보이는 그대로를 보여 주고, Esc · 화살표 · Tab · Enter 키를 보낸다.
+[![herdr](https://img.shields.io/badge/herdr-0.9%2B-8be9fd?style=flat-square)](https://herdr.dev)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-sessions-bd93f9?style=flat-square)](https://code.claude.com)
+[![Tailscale](https://img.shields.io/badge/Tailscale-tailnet%20only-5b97e8?style=flat-square)](https://tailscale.com)
+[![PWA](https://img.shields.io/badge/PWA-installable-ff79c6?style=flat-square)](#install-it-on-the-phone)
+[![Bun](https://img.shields.io/badge/Bun-1.4-f2a65e?style=flat-square)](https://bun.sh)
 
-폰에서는 한 화면씩 넘어가고, 폭이 900px 이상이면 왼쪽에 목록, 오른쪽에 대화가 나란히 놓인다.
+**English** · [한국어](README.ko.md)
 
-## 구조
+<img src="docs/images/hero.png" alt="arcdr on a laptop and a phone: the agent list, a question with tap-to-answer choices, the band a mod reports" />
 
-```
-폰·PC 브라우저 ─ Tailscale ─ tailscale serve (HTTPS, tailnet 안에서만)
-                               └ server/main.ts (127.0.0.2:7420)
-                                   ├ herdr 소켓 (~/.config/herdr/herdr.sock)
-                                   └ 대화 기록 파일 (읽기만)
-```
+</div>
 
-- `server/` — Bun 서버. herdr 소켓에 요청 하나씩 보낸다(`session.snapshot` · `pane.read` · `agent.prompt` · `pane.send_keys` · `pane.send_input`).
-- `web/` — Preact 화면. `scripts/build.ts` 가 `dist/` 로 묶는다.
+---
 
-## 누가 들어올 수 있나
+## Why arcdr
 
-여기 들어온 사람은 에이전트 터미널에 글을 칠 수 있다. 터미널은 이 PC 의 사용자 권한으로 돈다. 그래서 막는 단계를 따로 두지 않고 입구 하나만 좁게 연다.
+You run a dozen Claude Code sessions in herdr. You step away. One of them stops to ask *"which retry policy?"*
+and waits — for an hour.
 
-- `127.0.0.2` 에만 뜬다. WSL 은 `127.0.0.1` 에 뜬 것을 Windows 에 넘기지만 `127.0.0.2` 는 넘기지 않는다(2026-10-14 에 확인).
-- 모든 요청에 `Tailscale-User-Login` 이 있어야 하고 `ARCDR_OWNERS` 에 든 계정이어야 한다. 이 헤더는 이 PC 의 `tailscale serve` 만 붙인다.
-- 쓰기 요청은 같은 출처(`Origin`)에서 온 것만 받는다.
-- 보낼 수 있는 키는 정해 둔 것뿐이다. Ctrl+C 는 뺐다. 두 번 누르면 Claude Code 가 꺼진다.
-- 대화 글은 HTML 로 꽂지 않고 요소로 그린다. 대화에는 어디서 가져온 글이든 섞일 수 있다.
-- `tailscale funnel` 로 열지 않는다. 열면 인터넷 전체가 이 입구에 닿는다.
+- 📱 **One page for all of them.** The list looks like herdr's sidebar: number, status, stage. The one waiting
+  for you turns pink, and your phone buzzes.
+- 👆 **Answer with a tap.** Permission prompts, questions, plan approvals and folder-trust dialogs become
+  buttons. The screen is read again right before the keys go out, so a changed menu never gets the wrong answer.
+- 🔐 **Nothing new to log into.** Each session keeps the Claude account it already runs as; arcdr only needs your
+  Tailscale identity. Accounts you switch between stop being a chore.
+- 🧩 **Your mods, on the phone.** Whatever your Claude Code mods report to herdr — a stage, progress dots, the
+  context used, usage limits — arcdr draws where you say, the way you say. [How →](docs/mods.md)
+- 🪶 **Small.** One Bun server and one Preact page; two runtime dependencies (Preact, `web-push`). Reads herdr's
+  socket and Claude Code's transcripts, and installs nothing into either.
 
-## 설치
+## What you can do
 
-이 저장소를 받은 폴더에서 Claude Code 를 열고 「arcdr 설치해줘」라고 하면 `arcdr-setup` 스킬이 아래를 대신 돌린다.
-직접 할 때는:
+<table>
+<tr>
+<td width="33%"><img src="docs/images/phone-agents.png" alt="Agent list" /></td>
+<td width="33%"><img src="docs/images/phone-question.png" alt="A question with choices" /></td>
+<td width="33%"><img src="docs/images/phone-changes.png" alt="File changes as a diff" /></td>
+</tr>
+<tr>
+<td><b>Every session at a glance</b><br/>Spaces, agents, status, the stage your mod reports.</td>
+<td><b>Answer and send</b><br/>Choices as buttons, Korean IME–safe input, <code>/</code> and <code>@</code> completion, images by paste.</td>
+<td><b>See what changed</b><br/>Each edit as a diff, every file the conversation touched, a file viewer.</td>
+</tr>
+</table>
+
+<details>
+<summary><b>Everything else</b></summary>
+
+| | |
+|---|---|
+| **Chat** | The conversation as chat: Markdown, tables, code; tool calls folded into one line; links open in a new tab |
+| **Sending** | Sending → typed in → queued (while the agent works) → received; *send queued now*; draft kept per session |
+| **Keys** | Esc, arrows, Tab, ⇧Tab, Enter; Ctrl+C is left out on purpose (twice exits Claude Code) |
+| **Screen** | The terminal as it is now, wrapped for a phone |
+| **Session** | Permission-mode and model chips, interrupt, `/compact`, `/context`, `/usage`, rewind, `/clear` |
+| **Sessions** | Start one in any folder (optionally with a first message), resume an earlier conversation, close one |
+| **Attachments** | 📎, paste a screenshot, or drop a file; saved where the agent reads it, sent as `@path` |
+| **Notifications** | Web Push when an agent needs you or finishes — or when a mod's value matches your rule |
+| **Looks** | Phone and desktop layouts; themes: Auto, Dracula, Light, Arcness, Arcness Light, Nord; English, 한국어, 日本語, 简体中文 |
+
+</details>
+
+<p align="center">
+<img src="docs/images/desktop-light.png" width="80%" alt="arcdr on a desktop, Arcness Light theme" />
+</p>
+
+## Quick start
+
+You need [herdr](https://herdr.dev) running Claude Code on a Linux or WSL machine with systemd.
+
+**With Claude Code** — open this repository and say *"set up arcdr"*. The
+[`arcdr-setup`](.claude/skills/arcdr-setup/SKILL.md) skill runs the script below, hands you the two links only
+you can open, and asks before anything that is yours to decide.
+
+**By hand:**
 
 ```bash
-scripts/setup.sh status   # 무엇이 됐고 무엇이 남았는지
-scripts/setup.sh all      # 남은 단계를 차례로 — 이미 된 단계는 건너뛴다
+git clone https://github.com/arcnessai/arcdr && cd arcdr
+scripts/setup.sh status   # what is done, what is left
+scripts/setup.sh all      # every step; stops with exit code 10 when you have to open a link
 ```
 
-사람이 해야 하는 단계(Tailscale 로그인, tailnet HTTPS 켜기)에서는 주소를 보여 주고 종료 코드 10 으로 멈춘다.
-그 주소에서 하고 나서 다시 돌리면 이어서 간다. 지우기는 `scripts/setup.sh uninstall`(`--purge` 는 설정까지).
+It checks herdr, installs and logs in Tailscale, turns on tailnet HTTPS, installs Bun (checksum verified), runs
+the tests and builds, writes `~/.config/arcdr/env`, starts a systemd user service, and publishes it with
+`tailscale serve`.
 
-폰에서는 Tailscale 앱을 같은 계정으로 켜고, Chrome 으로 `https://<기기>.<tailnet>.ts.net` 을 연 다음 메뉴에서 「앱 설치」를 누른다.
+### Install it on the phone
 
-## 개발
+Turn on the Tailscale app with the same account, open `https://<machine>.<tailnet>.ts.net` in Chrome, and
+choose **Install app**. On another computer: Tailscale on, open the same address.
+
+### Just look around
 
 ```bash
-bun test            # 접근 판단 · 메뉴 읽기 · 대화 기록 · 마크다운
+bun install && bun run demo   # made-up agents on http://127.0.0.1:7430 — no herdr needed
+```
+
+## How it works
+
+```mermaid
+flowchart LR
+  phone["📱 Phone / 💻 browser"] -- "Tailscale (WireGuard)" --> serve["tailscale serve<br/>HTTPS · tailnet only"]
+  serve --> server["arcdr server<br/>127.0.0.2:7420"]
+  server -- "socket: session.snapshot · pane.read<br/>agent.prompt · pane.send_keys" --> herdr["herdr"]
+  herdr --> panes["Claude Code sessions"]
+  server -- "reads" --> logs[("~/.claude/projects<br/>transcripts")]
+  mods["your mods · hooks"] -- "report-metadata" --> herdr
+```
+
+The server asks herdr for a snapshot once a second while a page is open (and for notifications), streams
+changes to the page, reads each session's transcript from where its last read ended, and turns the visible
+terminal into choices when a menu is on it.
+
+## Security
+
+Whoever gets in can type into your agents' terminals, which run as your user. So there is one way in, kept narrow.
+
+<details>
+<summary><b>The model, step by step</b></summary>
+
+- **Loopback only.** The server binds `127.0.0.2`. WSL forwards `127.0.0.1` listeners to Windows; it does not
+  forward `127.0.0.2` (measured), so Windows programs cannot reach it.
+- **Your Tailscale identity.** Every request must carry `Tailscale-User-Login`, which only `tailscale serve` on
+  this machine sets, and name a login in `ARCDR_OWNERS`. Never `tailscale funnel`.
+- **Same-origin writes.** Writes need an `Origin` of the published host; `Host` must be that name.
+- **Keys from a list.** No Ctrl+C. Choosing re-reads the screen and refuses if the option changed.
+- **Nothing rendered as HTML.** Transcripts carry text from anywhere; Markdown is built as elements. Strict CSP.
+- **Files.** Uploads: images, PDF, text; content checked against the type; 15 MB; swept after 14 days.
+  Preview: refuses `~/.ssh`, `~/.claude.json`, login files, `.env`, key files, judged after following links.
+- **Push.** Subscriptions only to browser push services; payloads encrypted for the browser.
+
+</details>
+
+## Make it yours
+
+Your mods report values to herdr; `~/.config/arcdr/display.json` decides where they go:
+
+```json
+{
+  "agent": { "badge": { "from": "token:tree", "color": "cyan", "bold": true },
+             "line": [{ "from": "token:stage", "rules": [{ "startsWith": "◇", "color": "pink", "bold": true }] }] },
+  "band": [{ "left": [{ "from": "token:progress", "as": "dots" }, { "from": "token:doing" }],
+             "right": [{ "from": "token:context", "as": "meter", "rules": [{ "above": 80, "color": "error" }] }] }],
+  "alerts": [{ "from": "token:stage", "startsWith": "✓", "body": "{name} finished" }]
+}
+```
+
+Parts are drawn as `text`, `chip`, `badge`, `dots`, `meter` or `ago`, with rules on the value. Without a file,
+arcdr copies herdr's own sidebar rows. **[docs/mods.md](docs/mods.md)** has the whole format and a worked example.
+
+## Configuration
+
+`~/.config/arcdr/env` (the setup writes it):
+
+| Variable | Default | |
+|---|---|---|
+| `ARCDR_OWNERS` | — | Tailscale logins allowed in, comma-separated. Required |
+| `ARCDR_PUBLIC_HOSTS` | — | The name `tailscale serve` publishes, with `:port` when not 443 |
+| `ARCDR_MACHINE` | hostname | Shown on the connect screen |
+| `ARCDR_HOST` · `ARCDR_PORT` | `127.0.0.2` · `7420` | Loopback only |
+| `ARCDR_TRANSCRIPT_ROOTS` | `~/.claude/projects` | Where transcripts are |
+| `HERDR_SOCKET_PATH` | `~/.config/herdr/herdr.sock` | herdr's socket |
+
+## Compared with
+
+| | SSH app + herdr | Claude Remote Control | **arcdr** |
+|---|:-:|:-:|:-:|
+| Sessions of several Claude accounts in one list | ✓ | one account at a time | ✓ |
+| No Claude login on the phone | ✓ | – | ✓ |
+| Choices as buttons | – | ✓ | ✓ |
+| Conversation as chat, edits as diffs | – | ✓ | ✓ |
+| Shows what your mods report to herdr | as terminal text | ? | ✓ |
+
+## Development
+
+```bash
+bun test              # access gate, menus, transcripts, display spec, push, uploads, routes
 bun run typecheck
-scripts/setup.sh build && scripts/setup.sh service
+bun run check         # prettier + types + tests
+bun run demo          # the screens with made-up agents
+scripts/setup.sh build && scripts/setup.sh service   # rebuild and restart your install
 ```
 
-입력 쪽을 시험할 때는 쓰고 있는 세션 말고 `herdr --session <이름> server` 로 따로 띄운 세션을 쓴다. 서버를 그 세션에 붙이려면 `HERDR_SOCKET_PATH` 를 넘긴다.
+`server/` — Bun server: `app.ts` routes over a `Backend`, `main.ts` wires herdr. `web/` — the Preact page.
+To test input, use a separate herdr session (`herdr --session test server`), never the panes you work in.
+
+## License
+
+Not chosen yet.
