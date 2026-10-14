@@ -5,15 +5,21 @@ import { ChatView } from "./chat";
 import { ConnectView, type Conn } from "./connect";
 import { counts } from "./format";
 import * as I from "./icons";
-import { LangPicker } from "./langpicker";
+import { SettingsView } from "./settings";
 import { AgentList, SpaceCard, SpaceRow, Summary } from "./lists";
 import { t } from "./i18n";
 
-type Route = { name: "connect" } | { name: "spaces" } | { name: "space"; space: string } | { name: "agent"; pane: string };
+type Route =
+  | { name: "connect" }
+  | { name: "spaces" }
+  | { name: "settings" }
+  | { name: "space"; space: string }
+  | { name: "agent"; pane: string };
 
 function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
   if (parts[0] === "spaces") return { name: "spaces" };
+  if (parts[0] === "settings") return { name: "settings" };
   if (parts[0] === "s" && parts[1]) return { name: "space", space: parts[1] };
   if (parts[0] === "a" && parts[1]) return { name: "agent", pane: parts[1] };
   return { name: "connect" };
@@ -211,11 +217,21 @@ function App() {
     return (
       <div class="shell">
         <aside class="sidebar">
-          <a class="side-head" href="#/" title={t.connectScreen}>
-            <I.Mark size={22} />
-            <span class="side-machine">{health?.machine ?? machine}</span>
-            <span class={`conn-dot conn-${live === "up" ? "online" : "offline"}`} />
-          </a>
+          <div class="side-head">
+            <a class="side-home" href="#/" title={t.connectScreen}>
+              <I.Mark size={22} />
+              <span class="side-machine">{health?.machine ?? machine}</span>
+              <span class={`conn-dot conn-${live === "up" ? "online" : "offline"}`} />
+            </a>
+            <a
+              class="icon-btn"
+              href="#/settings"
+              aria-label={t.settings}
+              aria-current={route.name === "settings" ? "page" : undefined}
+            >
+              <I.Gear />
+            </a>
+          </div>
           <p class="side-label">{t.spaces}</p>
           <nav class="space-rows">
             {snap.spaces.map((s) => (
@@ -226,13 +242,14 @@ function App() {
             {t.agents} <span class="side-count">{spaceAgents.length}</span>
           </p>
           <AgentList agents={spaceAgents} selected={agent?.pane ?? null} />
-          <div class="side-foot">
-            <LangPicker />
-          </div>
         </aside>
         <main class="main">
           {banner}
-          {agent ? (
+          {route.name === "settings" ? (
+            <div class="scroll">
+              <SettingsView health={health} />
+            </div>
+          ) : agent ? (
             <ChatView agent={agent} wide />
           ) : (
             (lostAgent ?? (
@@ -244,6 +261,17 @@ function App() {
             ))
           )}
         </main>
+      </div>
+    );
+  }
+
+  if (route.name === "settings") {
+    return (
+      <div class="screen-wrap">
+        <TopBar title={t.settings} back="#/spaces" machine={health?.machine ?? machine} />
+        <div class="scroll">
+          <SettingsView health={health} />
+        </div>
       </div>
     );
   }
@@ -273,7 +301,11 @@ function App() {
 
   return (
     <div class="screen-wrap">
-      <TopBar title={t.spaces} back="#/" machine={health?.machine ?? machine} />
+      <TopBar title={t.spaces} back="#/" machine={health?.machine ?? machine}>
+        <a class="icon-btn" href="#/settings" aria-label={t.settings}>
+          <I.Gear />
+        </a>
+      </TopBar>
       {banner}
       <div class="scroll">
         <div class="space-cards">

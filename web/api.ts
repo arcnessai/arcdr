@@ -21,6 +21,11 @@ export interface ScreenRead {
 
 export type ChatChunk = Omit<Chunk, "file"> & { file: string | null };
 
+export interface PushJSON {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -67,4 +72,11 @@ export const api = {
   type: (pane: string, text: string, enter: boolean) => post(agentPath(pane, "type"), { text, enter }),
   keys: (pane: string, keys: string[]) => post(agentPath(pane, "keys"), { keys }),
   choose: (pane: string, n: number, label: string) => post<ScreenRead>(agentPath(pane, "choose"), { n, label }),
+  pushInfo: (endpoint: string) =>
+    request<{ publicKey: string; subscription: { lang: string; blocked: boolean; done: boolean } | null }>(
+      `/api/push?endpoint=${encodeURIComponent(endpoint)}`,
+    ),
+  pushSave: (sub: PushJSON & { lang: string; blocked: boolean; done: boolean }) => post("/api/push", sub),
+  pushRemove: (endpoint: string) => post("/api/push/remove", { endpoint }),
+  pushTest: (endpoint: string) => post("/api/push/test", { endpoint }),
 };

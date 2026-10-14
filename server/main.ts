@@ -1,9 +1,11 @@
+import { join } from "node:path";
 import { judge } from "./access";
 import { createApp, type Backend } from "./app";
 import { completeFile, filterSlash, slashCommands } from "./complete";
 import { loadConfig } from "./config";
 import { prompt, readScreen, sendInput, sendKeys } from "./herdr";
 import { SnapshotHub } from "./hub";
+import { loadVapid, notification, Notifier, PushStore, webPushDeliver } from "./push";
 import { findTranscript, readFrom, readTail } from "./transcript";
 
 const cfg = loadConfig();
@@ -30,11 +32,36 @@ const herdrBackend: Backend = {
   },
 };
 
+// Notifications: keys and subscriptions live next to the config. The hub keeps polling for the notifier
+// even when no page is open — that is when a phone most needs to hear.
+const vapid = loadVapid(join(cfg.configDir, "vapid.json"));
+const pushStore = new PushStore(join(cfg.configDir, "push.json"));
+const deliver = webPushDeliver(vapid, `https://${cfg.publicHosts[0] ?? "localhost"}`);
+const notifier = new Notifier(pushStore, deliver);
+hub.subscribe((event, data) => {
+  if (event === "snapshot") notifier.observe(JSON.parse(data));
+});
+
 const handle = createApp({
   backend: herdrBackend,
   machine: cfg.machine,
   distDir: cfg.distDir,
   gate: (req, remote) => judge({ method: req.method, remote, headers: req.headers }, cfg),
+  push: {
+    publicKey: vapid.publicKey,
+    get: (endpoint) => pushStore.get(endpoint),
+    save: (sub) => pushStore.save(sub),
+    remove: (endpoint) => pushStore.remove(endpoint),
+    test: (sub) =>
+      notifier.send(
+        sub,
+        JSON.stringify({
+          ...notification({ pane: "test", tabLabel: "arcdr", title: "", kind: "", tokens: {} }, "test", sub.lang),
+          url: "/#/",
+        }),
+        false,
+      ),
+  },
 });
 
 const server = Bun.serve({

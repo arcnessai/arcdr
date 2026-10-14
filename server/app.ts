@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Verdict } from "./access";
 import type { Suggestion } from "./complete";
+import { validEndpoint, type PushSubscriptionRecord } from "./push";
 import { HerdrError, type Agent, type Snapshot } from "./herdr";
 import { keysToChoose, parseMenu } from "./screen";
 import type { Chunk } from "./transcript";
@@ -29,7 +30,20 @@ export interface AppOptions {
   distDir: string;
   /** Decides who may come in, before any route runs. */
   gate: (req: Request, remote: string | null) => Verdict;
+  /** Web Push, when this server sends notifications; without it the push routes answer 404. */
+  push?: PushApi;
 }
+
+export interface PushApi {
+  publicKey: string;
+  get(endpoint: string): PushSubscriptionRecord | null;
+  save(sub: PushSubscriptionRecord): void;
+  remove(endpoint: string): void;
+  test(sub: PushSubscriptionRecord): Promise<void>;
+}
+
+const LANGS = new Set(["en", "ko", "ja", "zh"]);
+const PUSH_KEY = /^[A-Za-z0-9_-]{8,200}={0,2}$/;
 
 const SECURITY_HEADERS: Record<string, string> = {
   "content-security-policy":
@@ -121,7 +135,7 @@ function trimScreen(text: string): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function createApp({ backend, machine, distDir, gate }: AppOptions) {
+export function createApp({ backend, machine, distDir, gate, push }: AppOptions) {
   function events(req: Request): Response {
     let close = () => {};
     const stream = new ReadableStream<Uint8Array>({
@@ -156,6 +170,43 @@ export function createApp({ backend, machine, distDir, gate }: AppOptions) {
     });
   }
 
+  async function pushRoute(req: Request, url: URL, path: string): Promise<Response> {
+    if (!push) throw new HttpError(404, "no_push", "this server does not send notifications");
+    if (path === "/api/push" && req.method === "GET") {
+      const sub = push.get(url.searchParams.get("endpoint") ?? "");
+      return json(200, {
+        publicKey: push.publicKey,
+        subscription: sub && { lang: sub.lang, blocked: sub.blocked, done: sub.done },
+      });
+    }
+    if (req.method !== "POST") throw new HttpError(405, "method", "method not allowed");
+    const b = await body(req);
+    const endpoint = typeof b.endpoint === "string" ? b.endpoint : "";
+    if (endpoint.length > 1000 || !validEndpoint(endpoint))
+      throw new HttpError(400, "bad_endpoint", "not a browser push service endpoint");
+
+    if (path === "/api/push") {
+      const keys = (b.keys ?? {}) as Record<string, unknown>;
+      const p256dh = typeof keys.p256dh === "string" ? keys.p256dh : "";
+      const auth = typeof keys.auth === "string" ? keys.auth : "";
+      if (!PUSH_KEY.test(p256dh) || !PUSH_KEY.test(auth)) throw new HttpError(400, "bad_keys", "malformed subscription keys");
+      const lang = typeof b.lang === "string" && LANGS.has(b.lang) ? b.lang : "en";
+      push.save({ endpoint, keys: { p256dh, auth }, lang, blocked: b.blocked !== false, done: b.done === true });
+      return json(200, { ok: true });
+    }
+    if (path === "/api/push/remove") {
+      push.remove(endpoint);
+      return json(200, { ok: true });
+    }
+    if (path === "/api/push/test") {
+      const sub = push.get(endpoint);
+      if (!sub) throw new HttpError(404, "not_subscribed", "this device has no subscription");
+      await push.test(sub);
+      return json(200, { ok: true });
+    }
+    throw new HttpError(404, "not_found", "no such route");
+  }
+
   async function agentFor(pane: string): Promise<Agent> {
     const agent = (await backend.snapshot()).agents.find((a) => a.pane === pane);
     if (!agent) throw new HttpError(404, "no_agent", `no agent in pane ${pane}`);
@@ -170,6 +221,7 @@ export function createApp({ backend, machine, distDir, gate }: AppOptions) {
       return json(200, { machine, herdr: snap.version, login, spaces: snap.spaces.length, agents: snap.agents.length });
     }
     if (path === "/api/events" && req.method === "GET") return events(req);
+    if (path === "/api/push" || path.startsWith("/api/push/")) return pushRoute(req, url, path);
 
     const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose)$/.exec(path);
     if (!m) throw new HttpError(404, "not_found", "no such route");

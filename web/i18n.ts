@@ -50,6 +50,20 @@ const en = {
   tabScreen: "Screen",
   readingScreen: "Reading the screen…",
   language: "Language",
+  settings: "Settings",
+  notifications: "Notifications",
+  notifyOn: "Turn on notifications for this device",
+  notifyOff: "Turn off",
+  notifyBlocked: "When an agent needs your answer",
+  notifyDone: "When an agent finishes its work",
+  notifyTest: "Send a test",
+  notifyTestSent: "Sent — it should arrive in a moment.",
+  notifyActive: "Notifications are on for this device.",
+  notifyDenied: "This site's notifications are blocked. Allow them in the browser's site settings.",
+  notifyUnsupported: "This browser cannot receive notifications here. On an iPhone, add the app to the home screen first.",
+  notifyUnavailable: "This server does not send notifications.",
+  connection: "Connection",
+  openConnect: "Connection screen",
 };
 
 type Strings = typeof en;
@@ -104,6 +118,20 @@ const ko: Strings = {
   tabScreen: "화면",
   readingScreen: "화면을 읽는 중…",
   language: "언어",
+  settings: "설정",
+  notifications: "알림",
+  notifyOn: "이 기기에서 알림 켜기",
+  notifyOff: "알림 끄기",
+  notifyBlocked: "에이전트가 답을 기다릴 때",
+  notifyDone: "에이전트가 일을 끝냈을 때",
+  notifyTest: "시험 알림 보내기",
+  notifyTestSent: "보냈습니다 — 곧 도착합니다.",
+  notifyActive: "이 기기에 알림이 켜져 있습니다.",
+  notifyDenied: "이 사이트의 알림이 막혀 있습니다. 브라우저의 사이트 설정에서 허용하세요.",
+  notifyUnsupported: "이 브라우저에서는 알림을 받을 수 없습니다. 아이폰은 먼저 홈 화면에 앱을 추가하세요.",
+  notifyUnavailable: "이 서버는 알림을 보내지 않습니다.",
+  connection: "연결",
+  openConnect: "연결 화면",
 };
 
 const ja: Strings = {
@@ -156,6 +184,20 @@ const ja: Strings = {
   tabScreen: "画面",
   readingScreen: "画面を読み込んでいます…",
   language: "言語",
+  settings: "設定",
+  notifications: "通知",
+  notifyOn: "この端末で通知をオンにする",
+  notifyOff: "通知をオフにする",
+  notifyBlocked: "エージェントが回答を待っているとき",
+  notifyDone: "エージェントが作業を終えたとき",
+  notifyTest: "テスト通知を送る",
+  notifyTestSent: "送信しました — まもなく届きます。",
+  notifyActive: "この端末で通知がオンになっています。",
+  notifyDenied: "このサイトの通知はブロックされています。ブラウザのサイト設定で許可してください。",
+  notifyUnsupported: "このブラウザでは通知を受け取れません。iPhone では先にホーム画面にアプリを追加してください。",
+  notifyUnavailable: "このサーバーは通知を送りません。",
+  connection: "接続",
+  openConnect: "接続画面",
 };
 
 const zh: Strings = {
@@ -208,6 +250,20 @@ const zh: Strings = {
   tabScreen: "屏幕",
   readingScreen: "正在读取屏幕…",
   language: "语言",
+  settings: "设置",
+  notifications: "通知",
+  notifyOn: "在此设备上开启通知",
+  notifyOff: "关闭通知",
+  notifyBlocked: "智能体等你回答时",
+  notifyDone: "智能体完成工作时",
+  notifyTest: "发送测试通知",
+  notifyTestSent: "已发送 — 马上就到。",
+  notifyActive: "此设备已开启通知。",
+  notifyDenied: "此网站的通知已被阻止。请在浏览器的网站设置中允许。",
+  notifyUnsupported: "此浏览器无法在这里接收通知。iPhone 请先把应用添加到主屏幕。",
+  notifyUnavailable: "此服务器不发送通知。",
+  connection: "连接",
+  openConnect: "连接页面",
 };
 
 /** Each language under its own name, the way a person looks for theirs in a list. */

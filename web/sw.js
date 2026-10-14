@@ -49,3 +49,41 @@ self.addEventListener("fetch", (event) => {
       .catch(() => caches.match(key).then((hit) => hit ?? Response.error())),
   );
 });
+
+// Web Push: the server sends { title, body, tag, url } encrypted for this browser.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    /* a push with no readable payload still shows something */
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "arcdr", {
+      body: data.body || "",
+      tag: data.tag,
+      renotify: Boolean(data.tag),
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: data.url || "/#/" },
+    }),
+  );
+});
+
+// Tapping a notification opens the agent it is about, in the open app if there is one.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/#/", self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const open = windows.find((w) => w.url.startsWith(self.location.origin));
+      if (open) {
+        await open.focus();
+        if ("navigate" in open) await open.navigate(url);
+        return;
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
+});

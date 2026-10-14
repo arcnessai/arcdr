@@ -11,10 +11,12 @@
     "check": "prettier --check server web scripts/*.ts && tsc --noEmit && bun test"
   },
   "dependencies": {
-    "preact": "11.0.1"
+    "preact": "11.0.1",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@types/bun": "1.4.3",
+    "@types/web-push": "3.6.4",
     "prettier": "3.9.10",
     "typescript": "7.0.2"
   }

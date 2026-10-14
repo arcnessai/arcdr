@@ -13,6 +13,8 @@ export interface Config {
   transcriptRoots: string[];
   machine: string;
   distDir: string;
+  /** Where the env file sits; the push keys and subscriptions are kept beside it. */
+  configDir: string;
 }
 
 const LOOPBACK = /^(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|::1)$/;
@@ -36,6 +38,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     transcriptRoots: list(env.ARCDR_TRANSCRIPT_ROOTS ?? join(home, ".claude/projects")),
     machine: env.ARCDR_MACHINE ?? hostname(),
     distDir: env.ARCDR_DIST ?? join(import.meta.dir, "..", "dist"),
+    configDir: env.ARCDR_CONFIG_DIR ?? join(env.XDG_CONFIG_HOME ?? join(home, ".config"), "arcdr"),
   };
 }
 

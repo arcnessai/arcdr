@@ -604,6 +604,13 @@ p {
   background: var(--bg-elev);
   border-bottom: 1px solid var(--line);
 }
+.side-home {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .side-machine {
   flex: 1;
   font-weight: 700;
@@ -656,10 +663,42 @@ p {
 .sidebar .row-chev {
   display: none;
 }
-.side-foot {
-  margin-top: auto;
-  padding: 12px 16px;
-  border-top: 1px solid var(--line);
+.settings {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 14px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.settings-card h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.settings-card .btn-block,
+.settings-card .btn-row {
+  width: 100%;
+}
+.settings-line {
+  color: var(--muted);
+  font-size: 14px;
+}
+.settings-line.ok {
+  color: var(--green);
+}
+.settings-line.warn {
+  color: var(--orange);
 }
 .main {
   position: relative;
