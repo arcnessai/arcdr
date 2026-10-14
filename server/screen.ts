@@ -42,6 +42,60 @@ function indentOf(line: string): number {
   return line.length - line.trimStart().length;
 }
 
+/** Columns a line takes in the terminal: Hangul, CJK, full-width forms and emoji take two. */
+export function displayWidth(text: string): number {
+  let width = 0;
+  for (const ch of text) {
+    const c = ch.codePointAt(0)!;
+    const wide =
+      (c >= 0x1100 && c <= 0x115f) ||
+      (c >= 0x2e80 && c <= 0xa4cf) ||
+      (c >= 0xac00 && c <= 0xd7a3) ||
+      (c >= 0xf900 && c <= 0xfaff) ||
+      (c >= 0xfe30 && c <= 0xfe4f) ||
+      (c >= 0xff00 && c <= 0xff60) ||
+      (c >= 0xffe0 && c <= 0xffe6) ||
+      (c >= 0x1f300 && c <= 0x1faff);
+    width += wide ? 2 : 1;
+  }
+  return width;
+}
+
+/**
+ * How far short of the right edge a line can end and still have been wrapped there: a dialog's border and
+ * padding, and the next word, which did not fit.
+ */
+const WRAP_SLACK = 16;
+
+/**
+ * The lines above a menu, back to a rule or ten lines, with every line the terminal wrapped joined to the
+ * one it continues — a question two lines long is one question, not its last half.
+ */
+function contextAbove(lines: string[], first: number): string[] {
+  const width = Math.max(0, ...lines.map((l) => displayWidth(l)));
+  const raw: string[] = [];
+  for (let i = first - 1; i >= 0 && raw.length < 24; i--) {
+    if (isRule(lines[i]!)) break;
+    raw.unshift(lines[i]!);
+  }
+  const context: string[] = [];
+  let before: string | null = null;
+  for (const line of raw) {
+    if (line.trim() === "") {
+      if (context.length > 0 && context.at(-1) !== "") context.push("");
+      before = null;
+      continue;
+    }
+    const wrapped = before !== null && indentOf(line) === indentOf(before) && displayWidth(before) >= width - WRAP_SLACK;
+    if (wrapped) context[context.length - 1] += ` ${line.trim()}`;
+    else context.push(line.trim());
+    before = line;
+  }
+  while (context[0] === "") context.shift();
+  while (context.at(-1) === "") context.pop();
+  return context.slice(-10).map((l) => l.slice(0, 600));
+}
+
 interface OptionLine {
   index: number;
   numberCol: number;
@@ -95,15 +149,7 @@ function parseUnnumbered(screen: string): Menu | null {
   const cursor = options.findIndex((o) => o.cursor);
   if (options.length < 2 || options.length > 9 || cursor < 0 || options.filter((o) => o.cursor).length !== 1) return null;
   const first = end - options.length + 1;
-  const context: string[] = [];
-  for (let i = first - 1; i >= 0 && context.length < 10; i--) {
-    const line = lines[i]!;
-    if (isRule(line)) break;
-    if (line.trim() === "" && context.length > 0 && context[0] === "") continue;
-    context.unshift(line.trim() === "" ? "" : line.trim().slice(0, 240));
-  }
-  while (context[0] === "") context.shift();
-  while (context[context.length - 1] === "") context.pop();
+  const context = contextAbove(lines, first);
   return { context, choices: options.map((o, i) => ({ n: i + 1, label: o.label, detail: [], checked: null })), cursor };
 }
 
@@ -171,15 +217,7 @@ function parseNumbered(screen: string): Menu | null {
   const cursor = options.findIndex((o) => o.cursor);
   if (cursor < 0) return null;
 
-  const context: string[] = [];
-  for (let i = first - 1; i >= 0 && context.length < 10; i--) {
-    const line = lines[i]!;
-    if (isRule(line)) break;
-    if (line.trim() === "" && context.length > 0 && context[0] === "") continue;
-    context.unshift(line.trim() === "" ? "" : line.trim().slice(0, 240));
-  }
-  while (context[0] === "") context.shift();
-  while (context[context.length - 1] === "") context.pop();
+  const context = contextAbove(lines, first);
 
   return { context, choices, cursor };
 }

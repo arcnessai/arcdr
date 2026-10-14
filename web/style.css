@@ -1696,6 +1696,10 @@ a.link code {
   border-radius: 16px;
   background: color-mix(in srgb, var(--pink) 6%, var(--surface));
 }
+/* The panel scrolls; nothing in it shrinks to make room, or the text above the question is cut to a sliver. */
+.menu-panel > * {
+  flex-shrink: 0;
+}
 .menu-badge {
   color: var(--pink);
   font-size: 12px;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { keysToChoose, parseMenu, parseMode } from "./screen";
+import { displayWidth, keysToChoose, parseMenu, parseMode } from "./screen";
 
 const PERMISSION = `
 ● Running the tests now.
@@ -136,6 +136,25 @@ describe("parseMenu", () => {
     const screen = "Steps:\n  1. Read\n  2. Write\n\nProceed?\n❯ 1. Yes\n  2. No\n";
     const m = parseMenu(screen)!;
     expect(m.choices.map((c) => c.label)).toEqual(["Yes", "No"]);
+  });
+});
+
+describe("a question the terminal wrapped", () => {
+  const rule = "─".repeat(60);
+  const long = ` ${"계속 이어지는 ".repeat(6).trimEnd()}`;
+  test("comes back as one line, while a short line above it stays its own", () => {
+    expect(displayWidth(long)).toBeGreaterThan(60 - 16);
+    const screen = [rule, " Bash 명령", "", long, " 쌉니다. 어떻게 할까요?", "", "❯ 1. 이어서 진행", "  2. 여기서 멈춤", ""].join(
+      "\n",
+    );
+    expect(parseMenu(screen)?.context).toEqual(["Bash 명령", "", `${long.trim()} 쌉니다. 어떻게 할까요?`]);
+  });
+  test("a line that ends well short of the edge is not joined to the next", () => {
+    const screen = [rule, " 짧은 줄", " 어떻게 할까요?", "", "❯ 1. 예", "  2. 아니요", ""].join("\n");
+    expect(parseMenu(screen)?.context).toEqual(["짧은 줄", "어떻게 할까요?"]);
+  });
+  test("Hangul takes two columns", () => {
+    expect(displayWidth("가나 ab")).toBe(7);
   });
 });
 
