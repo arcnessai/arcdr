@@ -243,4 +243,4 @@ const server = Bun.serve({
   },
 });
 
-console.log(`herdr-remote listening on http://${server.hostname}:${server.port} for ${cfg.owners.join(", ")}`);
+console.log(`arcdr listening on http://${server.hostname}:${server.port} for ${cfg.owners.join(", ")}`);

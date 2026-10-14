@@ -154,7 +154,7 @@ function App() {
 
   const blocked = snap ? counts(snap.agents).blocked : 0;
   useEffect(() => {
-    document.title = blocked > 0 ? `(${blocked}) herdr` : "herdr";
+    document.title = blocked > 0 ? `(${blocked}) arcdr` : "arcdr";
   }, [blocked]);
 
   const firstSpace = snap?.spaces[0]?.id ?? "";

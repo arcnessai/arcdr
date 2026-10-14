@@ -46,7 +46,7 @@ export function call<T = unknown>(
       resolve(msg.result as T);
     };
     sock.setEncoding("utf8");
-    sock.on("connect", () => sock.write(JSON.stringify({ id: `hr-${++seq}`, method, params }) + "\n"));
+    sock.on("connect", () => sock.write(JSON.stringify({ id: `arcdr-${++seq}`, method, params }) + "\n"));
     sock.on("data", (chunk: string) => {
       buf += chunk;
       const nl = buf.indexOf("\n");

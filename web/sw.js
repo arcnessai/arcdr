@@ -1,6 +1,6 @@
 // Keeps the app shell so the page opens even when the tailnet does not reach this machine,
 // and can say so. API calls always go to the network.
-const CACHE = "herdr-remote-__VERSION__";
+const CACHE = "arcdr-__VERSION__";
 const SHELL = ["/", "/app.js?v=__VERSION__", "/style.css?v=__VERSION__", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {

@@ -83,7 +83,7 @@ describe("parseEntries", () => {
 });
 
 describe("reading the file", () => {
-  const dir = mkdtempSync(join(tmpdir(), "hr-transcript-"));
+  const dir = mkdtempSync(join(tmpdir(), "arcdr-transcript-"));
   const project = join(dir, "-root-proj");
   const id = "0123abcd-0000-4000-8000-000000000000";
   const file = join(project, `${id}.jsonl`);
@@ -125,7 +125,7 @@ describe("reading the file", () => {
 });
 
 describe("readTail widening", () => {
-  const dir = mkdtempSync(join(tmpdir(), "hr-tail-"));
+  const dir = mkdtempSync(join(tmpdir(), "arcdr-tail-"));
   const file = join(dir, "s.jsonl");
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
 

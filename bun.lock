@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "herdr-remote",
+      "name": "arcdr",
       "dependencies": {
         "preact": "11.0.1",
       },

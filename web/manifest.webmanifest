@@ -1,6 +1,6 @@
 {
-  "name": "herdr remote",
-  "short_name": "herdr",
+  "name": "arcdr",
+  "short_name": "arcdr",
   "description": "herdr 에이전트를 폰과 다른 PC 에서 보고 답하기",
   "lang": "ko",
   "start_url": "/#/",

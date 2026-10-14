@@ -26,7 +26,7 @@ export function ConnectView(props: {
     <main class="connect">
       <div class="connect-brand">
         <I.Mark size={40} />
-        <h1>herdr remote</h1>
+        <h1>arcdr</h1>
       </div>
 
       <section class={`machine-card is-${conn}`} aria-live="polite">

@@ -1,4 +1,4 @@
-# herdr remote
+# arcdr
 
 herdr 에서 돌고 있는 에이전트들을 폰이나 다른 PC 의 브라우저에서 보고 답하는 웹앱이다.
 
@@ -27,7 +27,7 @@ herdr 에서 돌고 있는 에이전트들을 폰이나 다른 PC 의 브라우�
 여기 들어온 사람은 에이전트 터미널에 글을 칠 수 있다. 터미널은 이 PC 의 사용자 권한으로 돈다. 그래서 막는 단계를 따로 두지 않고 입구 하나만 좁게 연다.
 
 - `127.0.0.2` 에만 뜬다. WSL 은 `127.0.0.1` 에 뜬 것을 Windows 에 넘기지만 `127.0.0.2` 는 넘기지 않는다(2026-10-14 에 확인).
-- 모든 요청에 `Tailscale-User-Login` 이 있어야 하고 `HR_OWNERS` 에 든 계정이어야 한다. 이 헤더는 이 PC 의 `tailscale serve` 만 붙인다.
+- 모든 요청에 `Tailscale-User-Login` 이 있어야 하고 `ARCDR_OWNERS` 에 든 계정이어야 한다. 이 헤더는 이 PC 의 `tailscale serve` 만 붙인다.
 - 쓰기 요청은 같은 출처(`Origin`)에서 온 것만 받는다.
 - 보낼 수 있는 키는 정해 둔 것뿐이다. Ctrl+C 는 뺐다. 두 번 누르면 Claude Code 가 꺼진다.
 - 대화 글은 HTML 로 꽂지 않고 요소로 그린다. 대화에는 어디서 가져온 글이든 섞일 수 있다.
@@ -36,12 +36,12 @@ herdr 에서 돌고 있는 에이전트들을 폰이나 다른 PC 의 브라우�
 ## 설치
 
 ```bash
-cd ~/herdr-remote
+cd ~/arcdr
 bun install --frozen-lockfile
 bun run build
-mkdir -p ~/.config/herdr-remote && cp deploy/env.example ~/.config/herdr-remote/env   # 값을 채운다
-cp deploy/herdr-remote.service ~/.config/systemd/user/
-systemctl --user daemon-reload && systemctl --user enable --now herdr-remote
+mkdir -p ~/.config/arcdr && cp deploy/env.example ~/.config/arcdr/env   # 값을 채운다
+cp deploy/arcdr.service ~/.config/systemd/user/
+systemctl --user daemon-reload && systemctl --user enable --now arcdr
 tailscale serve --bg --https=443 http://127.0.0.2:7420
 ```
 
@@ -52,7 +52,7 @@ tailscale serve --bg --https=443 http://127.0.0.2:7420
 ```bash
 bun test            # 접근 판단 · 메뉴 읽기 · 대화 기록 · 마크다운
 bun run typecheck
-bun run build && systemctl --user restart herdr-remote
+bun run build && systemctl --user restart arcdr
 ```
 
 입력 쪽을 시험할 때는 쓰고 있는 세션 말고 `herdr --session <이름> server` 로 따로 띄운 세션을 쓴다. 서버를 그 세션에 붙이려면 `HERDR_SOCKET_PATH` 를 넘긴다.
