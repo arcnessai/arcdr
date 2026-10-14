@@ -6,6 +6,7 @@ import { AgentLine, Badge, StatusDot } from "./lists";
 import { nameOf, PartRow, useDisplay } from "./parts";
 import { ChangeDiff, ChangesTab, changeStats, Stats } from "./changes";
 import { Linked } from "./linkify";
+import { UserText } from "./usertext";
 import { Markdown } from "./markdown";
 import { tokenAt, type Token } from "./token";
 import { t } from "./i18n";
@@ -254,7 +255,7 @@ function Message({
       return (
         <div class="msg msg-user">
           <div class="bubble">
-            <Linked text={item.text} />
+            <UserText text={item.text} />
           </div>
           {mine && <span class="pending-state is-received">✓ {t.received}</span>}
         </div>
@@ -369,7 +370,7 @@ function Messages(props: {
         {props.queue.map((text, i) => (
           <div key={`q${i}`} class="msg msg-user pending is-queued">
             <div class="bubble">
-              <Linked text={text} />
+              <UserText text={text} />
             </div>
             <span class="pending-state">{t.queued}</span>
           </div>
@@ -377,7 +378,7 @@ function Messages(props: {
         {props.pending.map((p) => (
           <div key={p.id} class={`msg msg-user pending is-${p.state}`}>
             <div class="bubble">
-              <Linked text={p.text} />
+              <UserText text={p.text} />
             </div>
             <span class="pending-state">{t.pending[p.state]}</span>
           </div>
@@ -506,7 +507,13 @@ function useSuggestions(pane: string, token: Token | null): Suggestion[] {
   return items;
 }
 
-function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boolean>; keysOpen: boolean; onKeys: () => void }) {
+function Composer(props: {
+  agent: Agent;
+  onSend: (text: string) => Promise<boolean>;
+  keysOpen: boolean;
+  onKeys: () => void;
+  onError: (message: string) => void;
+}) {
   const draftKey = `draft:${props.agent.pane}`;
   const [text, setText] = useState(() => stored(draftKey));
   const [caret, setCaret] = useState(0);
@@ -515,6 +522,9 @@ function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boole
   const [dismissed, setDismissed] = useState<string | null>(null);
   const area = useRef<HTMLTextAreaElement>(null);
   const list = useRef<HTMLUListElement>(null);
+  const picker = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(0);
+  const [dragging, setDragging] = useState(false);
 
   const token = tokenAt(text, caret);
   const tokenKey = token ? `${token.kind}:${token.start}:${token.query}` : null;
@@ -541,6 +551,40 @@ function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boole
   }, [text]);
 
   const syncCaret = () => setCaret(area.current?.selectionStart ?? 0);
+
+  /** Puts `insert` at the caret (or the end) and moves the caret after it. */
+  const insertAtCaret = (insert: string) => {
+    const el = area.current;
+    setText((current) => {
+      const at = el && document.activeElement === el ? el.selectionStart : current.length;
+      const before = current.slice(0, at);
+      const pad = before && !/\s$/.test(before) ? " " : "";
+      const next = before + pad + insert + current.slice(at);
+      const pos = at + pad.length + insert.length;
+      requestAnimationFrame(() => {
+        el?.focus();
+        el?.setSelectionRange(pos, pos);
+        setCaret(pos);
+      });
+      return next;
+    });
+  };
+
+  /** Uploads files one by one; each lands in the message as @path, the way Claude Code takes a file. */
+  const addFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploading((n) => n + files.length);
+    for (const f of files) {
+      try {
+        const { path } = await api.upload(props.agent.pane, f, f.name || "pasted");
+        insertAtCaret(`@${path} `);
+      } catch (e) {
+        props.onError(`${t.uploadFailed}: ${e instanceof ApiError ? e.message : String(e)}`);
+      } finally {
+        setUploading((n) => n - 1);
+      }
+    }
+  };
 
   const accept = (s: Suggestion) => {
     if (!token) return;
@@ -573,12 +617,26 @@ function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boole
   const blocked = props.agent.status === "blocked";
   return (
     <form
-      class="composer"
+      class={`composer${dragging ? " is-dragging" : ""}`}
+      onDragOver={(e) => {
+        if (![...(e.dataTransfer?.types ?? [])].includes("Files")) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        setDragging(false);
+        const files = [...(e.dataTransfer?.files ?? [])];
+        if (files.length === 0) return;
+        e.preventDefault();
+        void addFiles(files);
+      }}
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
       }}
     >
+      {uploading > 0 && <p class="uploading">{t.uploading(uploading)}</p>}
       {open && (
         <ul class="suggest" role="listbox" aria-label={t.suggestions} ref={list}>
           {suggestions.map((s, i) => (
@@ -602,6 +660,21 @@ function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boole
       <button type="button" class="icon-btn" aria-pressed={props.keysOpen} aria-label={t.keyButtons} onClick={props.onKeys}>
         <I.Keyboard />
       </button>
+      <button type="button" class="icon-btn" aria-label={t.attach} title={t.attach} onClick={() => picker.current?.click()}>
+        <I.Clip />
+      </button>
+      <input
+        ref={picker}
+        type="file"
+        multiple
+        hidden
+        accept="image/*,application/pdf,text/plain,text/markdown,text/csv,application/json,.md,.log,.csv,.json,.txt"
+        onChange={(e) => {
+          const input = e.target as HTMLInputElement;
+          void addFiles([...(input.files ?? [])]);
+          input.value = "";
+        }}
+      />
       <textarea
         ref={area}
         rows={1}
@@ -615,6 +688,13 @@ function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boole
           syncCaret();
         }}
         onClick={syncCaret}
+        onPaste={(e) => {
+          // A copied screenshot arrives as a file; text pastes go on as usual.
+          const files = [...(e.clipboardData?.files ?? [])];
+          if (files.length === 0) return;
+          e.preventDefault();
+          void addFiles(files);
+        }}
         onKeyUp={(e) => {
           if (!["ArrowUp", "ArrowDown", "Tab", "Enter", "Escape"].includes(e.key)) syncCaret();
         }}
@@ -804,7 +884,7 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
         ))}
         {answering && <MenuPanel {...answering} />}
         {(keysOpen || tab === "screen") && <KeyBar pane={pane} onError={setToast} />}
-        <Composer agent={agent} onSend={send} keysOpen={keysOpen} onKeys={() => setKeysOpen(!keysOpen)} />
+        <Composer agent={agent} onSend={send} keysOpen={keysOpen} onKeys={() => setKeysOpen(!keysOpen)} onError={setToast} />
         {spec.footer && <PartRow row={spec.footer} of={agent} />}
       </div>
     </section>

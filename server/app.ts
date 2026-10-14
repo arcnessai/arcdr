@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { Verdict } from "./access";
 import { filterSlash, type Suggestion } from "./complete";
 import type { LoadedDisplay } from "./spec";
+import { contentTypeOf, MAX_UPLOAD_BYTES, saveUpload, uploadPath } from "./uploads";
 import { validEndpoint, type PushSubscriptionRecord } from "./push";
 import { HerdrError, type Agent, type Snapshot } from "./herdr";
 import { keysToChoose, parseMenu } from "./screen";
@@ -35,6 +36,8 @@ export interface AppOptions {
   push?: PushApi;
   /** What to show besides the conversation, and from which values (docs/mods.md). */
   display: () => LoadedDisplay;
+  /** Where files a person adds are kept (server/uploads.ts); without it uploads answer 404. */
+  uploadsRoot?: string;
 }
 
 export interface PushApi {
@@ -138,7 +141,7 @@ function trimScreen(text: string): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function createApp({ backend, machine, distDir, gate, push, display }: AppOptions) {
+export function createApp({ backend, machine, distDir, gate, push, display, uploadsRoot }: AppOptions) {
   function events(req: Request): Response {
     let close = () => {};
     const stream = new ReadableStream<Uint8Array>({
@@ -233,8 +236,20 @@ export function createApp({ backend, machine, distDir, gate, push, display }: Ap
     if (path === "/api/events" && req.method === "GET") return events(req);
     if (path === "/api/push" || path.startsWith("/api/push/")) return pushRoute(req, url, path);
     if (path === "/api/display" && req.method === "GET") return json(200, display());
+    const upload = /^\/api\/uploads\/([^/]+)\/([^/]+)$/.exec(path);
+    if (upload && req.method === "GET") {
+      const file = uploadsRoot ? uploadPath(uploadsRoot, upload[1]!, upload[2]!) : null;
+      if (!file) throw new HttpError(404, "not_found", "no such upload");
+      return new Response(Bun.file(file), {
+        headers: {
+          ...SECURITY_HEADERS,
+          "content-type": contentTypeOf(file) ?? "application/octet-stream",
+          "cache-control": "private, max-age=86400",
+        },
+      });
+    }
 
-    const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose)$/.exec(path);
+    const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose|upload)$/.exec(path);
     if (!m) throw new HttpError(404, "not_found", "no such route");
     const pane = decodeURIComponent(m[1]!);
     if (!/^[\w-]+:[\w-]+$/.test(pane)) throw new HttpError(400, "bad_pane", "malformed pane id");
@@ -267,6 +282,29 @@ export function createApp({ backend, machine, distDir, gate, push, display }: Ap
     if (action === "screen" && req.method === "GET") {
       const text = await backend.readScreen(pane);
       return json(200, { text: trimScreen(text), menu: parseMenu(text) });
+    }
+
+    if (action === "upload" && req.method === "POST") {
+      if (!uploadsRoot) throw new HttpError(404, "no_uploads", "this server takes no files");
+      const declared = Number(req.headers.get("content-length") ?? "0");
+      if (declared > MAX_UPLOAD_BYTES) throw new HttpError(413, "too_large", "the file is larger than 15 MB");
+      const bytes = new Uint8Array(await req.arrayBuffer());
+      if (bytes.length === 0) throw new HttpError(400, "empty", "the file is empty");
+      if (bytes.length > MAX_UPLOAD_BYTES) throw new HttpError(413, "too_large", "the file is larger than 15 MB");
+      let name = "";
+      try {
+        name = decodeURIComponent(req.headers.get("x-file-name") ?? "");
+      } catch {
+        /* a name is only a hint */
+      }
+      try {
+        return json(200, saveUpload(uploadsRoot, bytes, name, req.headers.get("content-type") ?? ""));
+      } catch (e) {
+        const why = (e as Error).message;
+        if (why === "unsupported") throw new HttpError(415, "unsupported", "images, PDF and text files only");
+        if (why === "mismatch") throw new HttpError(415, "mismatch", "the file's content is not what its name says");
+        throw e;
+      }
     }
 
     if (req.method !== "POST") throw new HttpError(405, "method", "method not allowed");

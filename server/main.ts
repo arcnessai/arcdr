@@ -8,6 +8,7 @@ import { SnapshotHub } from "./hub";
 import { displayLoader } from "./display";
 import { loadVapid, notification, Notifier, PushStore, webPushDeliver } from "./push";
 import { findTranscript, readFrom, readTail } from "./transcript";
+import { sweepUploads } from "./uploads";
 
 const cfg = loadConfig();
 const hub = new SnapshotHub(cfg.socketPath);
@@ -45,12 +46,18 @@ hub.subscribe((event, data) => {
   if (event === "snapshot") notifier.observe(JSON.parse(data));
 });
 
+// Files added from a phone, where the agent can read them (Remote Control keeps its own under ~/.claude/uploads).
+const uploadsRoot = join(home, ".claude", "uploads", "arcdr");
+sweepUploads(uploadsRoot);
+setInterval(() => sweepUploads(uploadsRoot), 6 * 3600_000);
+
 const handle = createApp({
   backend: herdrBackend,
   machine: cfg.machine,
   distDir: cfg.distDir,
   gate: (req, remote) => judge({ method: req.method, remote, headers: req.headers }, cfg),
   display,
+  uploadsRoot,
   push: {
     publicKey: vapid.publicKey,
     get: (endpoint) => pushStore.get(endpoint),

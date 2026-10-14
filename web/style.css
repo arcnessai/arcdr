@@ -1535,6 +1535,31 @@ a.link code {
   gap: 6px;
 }
 
+.composer.is-dragging textarea {
+  border-color: var(--accent);
+  border-style: dashed;
+}
+.uploading {
+  position: absolute;
+  left: 50px;
+  bottom: calc(100% + 6px);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+.upload-thumb {
+  display: block;
+  margin: 4px 0;
+}
+.upload-thumb img {
+  display: block;
+  max-width: min(240px, 100%);
+  max-height: 240px;
+  border-radius: 10px;
+  object-fit: cover;
+}
 .suggest {
   position: absolute;
   left: 0;

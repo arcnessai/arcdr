@@ -72,6 +72,9 @@ const en = {
   notifyCustom: "When a mod's alert rule matches",
   display: "Display",
   displayOrigin: { file: "From display.json", herdr: "From herdr's sidebar settings", default: "Default" },
+  attach: "Attach an image or file",
+  uploading: (n: number) => `Uploading ${n}…`,
+  uploadFailed: "Could not add the file",
   displayHelp: "What mods report to herdr, and where arcdr shows it, is set in ~/.config/arcdr/display.json — see docs/mods.md.",
 };
 
@@ -149,6 +152,9 @@ const ko: Strings = {
   notifyCustom: "모드가 보낸 값이 알림 규칙에 맞을 때",
   display: "표시",
   displayOrigin: { file: "display.json 에서", herdr: "herdr 왼쪽 목록 설정에서", default: "기본값" },
+  attach: "이미지나 파일 붙이기",
+  uploading: (n) => `${n}개 올리는 중…`,
+  uploadFailed: "파일을 붙이지 못했습니다",
   displayHelp:
     "모드가 herdr 에 보낸 값을 arcdr 어디에 어떻게 보일지는 ~/.config/arcdr/display.json 에서 정합니다 — docs/mods.md 참고.",
 };
@@ -225,6 +231,9 @@ const ja: Strings = {
   notifyCustom: "モッドの値が通知ルールに合ったとき",
   display: "表示",
   displayOrigin: { file: "display.json から", herdr: "herdr のサイドバー設定から", default: "既定" },
+  attach: "画像やファイルを添付",
+  uploading: (n) => `${n} 件アップロード中…`,
+  uploadFailed: "ファイルを添付できませんでした",
   displayHelp:
     "モッドが herdr に送った値を arcdr のどこにどう出すかは ~/.config/arcdr/display.json で決めます — docs/mods.md を参照。",
 };
@@ -301,6 +310,9 @@ const zh: Strings = {
   notifyCustom: "模组的值符合通知规则时",
   display: "显示",
   displayOrigin: { file: "来自 display.json", herdr: "来自 herdr 侧边栏设置", default: "默认" },
+  attach: "附加图片或文件",
+  uploading: (n) => `正在上传 ${n} 个…`,
+  uploadFailed: "无法添加文件",
   displayHelp: "模组报告给 herdr 的值在 arcdr 的哪里、怎样显示，由 ~/.config/arcdr/display.json 决定 — 见 docs/mods.md。",
 };
 
