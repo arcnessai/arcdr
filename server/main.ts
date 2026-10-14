@@ -5,6 +5,7 @@ import { loadConfig } from "./config";
 import { HerdrError, prompt, readScreen, sendInput, sendKeys, type Agent } from "./herdr";
 import { SnapshotHub } from "./hub";
 import { keysToChoose, parseMenu } from "./screen";
+import { completeFile, filterSlash, slashCommands } from "./complete";
 import { findTranscript, readFrom, readTail } from "./transcript";
 
 const cfg = loadConfig();
@@ -128,7 +129,7 @@ async function api(req: Request, url: URL, login: string): Promise<Response> {
   }
   if (path === "/api/events" && req.method === "GET") return events(req);
 
-  const m = /^\/api\/agents\/([^/]+)\/(chat|screen|send|type|keys|choose)$/.exec(path);
+  const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose)$/.exec(path);
   if (!m) throw new HttpError(404, "not_found", "no such route");
   const pane = decodeURIComponent(m[1]!);
   if (!/^[\w-]+:[\w-]+$/.test(pane)) throw new HttpError(400, "bad_pane", "malformed pane id");
@@ -143,6 +144,16 @@ async function api(req: Request, url: URL, login: string): Promise<Response> {
     const sameFile = url.searchParams.get("file") === `${agent.sessionId}.jsonl`;
     const chunk = sameFile && Number.isSafeInteger(offset) && offset > 0 ? readFrom(file, offset) : { ...readTail(file), reset: true };
     return json(200, chunk);
+  }
+
+  if (action === "complete" && req.method === "GET") {
+    const q = (url.searchParams.get("q") ?? "").slice(0, 300);
+    if (!agent.cwd) return json(200, { items: [] });
+    const items =
+      url.searchParams.get("kind") === "file"
+        ? completeFile(agent.cwd, q)
+        : filterSlash(slashCommands(agent.cwd, process.env.HOME ?? "/root"), q);
+    return json(200, { items });
   }
 
   if (action === "screen" && req.method === "GET") {

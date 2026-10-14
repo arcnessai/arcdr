@@ -1,0 +1,256 @@
+/** UI strings, one dictionary per language. Adding a language: copy `en`, translate, list it in LANGUAGES. */
+
+const en = {
+  status: { working: "Working", blocked: "Needs you", done: "Done", idle: "Idle", unknown: "Unknown" },
+  offline: "Can't connect",
+  checking: "Checking the connection…",
+  connected: (herdr: string, agents: number) => `Connected · herdr ${herdr} · ${agents} agents`,
+  connect: "Connect",
+  autoConnect: "Connect right away next time",
+  hintPhone: "Check that Tailscale is on in this phone and that the computer is awake.",
+  hintDevice: "Check that Tailscale is on in this device and that the computer is awake.",
+  openTailscale: "Open Tailscale",
+  retry: "Try again",
+  account: (login: string) => `Tailscale account · ${login}`,
+  lost: "Connection lost · reconnecting",
+  herdrDown: "herdr is not responding",
+  back: "Back",
+  toList: "Back to the list",
+  agentGone: "This agent is no longer there.",
+  connectScreen: "Connection",
+  spaces: "Spaces",
+  agents: "Agents",
+  agentCount: (n: number) => `${n} agents`,
+  pickAgent: "Pick an agent on the left.",
+  noAgents: "No agents in this space.",
+  more: "Show more",
+  tools: (n: number) => `${n} tool${n === 1 ? "" : "s"}`,
+  failed: (n: number) => `${n} failed`,
+  clipped: "Earlier messages are left out",
+  loadingChat: "Loading the conversation…",
+  noTranscript: "No transcript found for this agent. See it under Screen.",
+  chatError: "Could not load the conversation.",
+  compacted: "Conversation compacted",
+  pending: { sending: "Sending", typed: "Typed in", unconfirmed: "Not seen yet — check Screen" },
+  queued: "Queued — read when the current work ends",
+  received: "Received",
+  suggestions: "Suggestions",
+  kind: { builtin: "built-in", skill: "skill", command: "command" },
+  newMessages: "New messages",
+  menuChanged: "The choices changed. Look again.",
+  needsAnswer: "Needs your answer",
+  choices: "Choices",
+  keys: "Keys",
+  keyButtons: "Key buttons",
+  typeRaw: "Type into the screen",
+  message: "Message",
+  send: "Send",
+  answerFirst: "Answer the choices first.",
+  tabChat: "Chat",
+  tabScreen: "Screen",
+  readingScreen: "Reading the screen…",
+  language: "Language",
+};
+
+type Strings = typeof en;
+
+const ko: Strings = {
+  status: { working: "작업 중", blocked: "답 필요", done: "끝남", idle: "대기", unknown: "모름" },
+  offline: "연결할 수 없습니다",
+  checking: "연결을 확인하는 중…",
+  connected: (herdr, agents) => `연결됨 · herdr ${herdr} · 에이전트 ${agents}`,
+  connect: "연결",
+  autoConnect: "다음부터 바로 연결",
+  hintPhone: "폰의 Tailscale 이 켜져 있는지, PC 가 깨어 있는지 확인하세요.",
+  hintDevice: "이 기기의 Tailscale 이 켜져 있는지, PC 가 깨어 있는지 확인하세요.",
+  openTailscale: "Tailscale 열기",
+  retry: "다시 시도",
+  account: (login) => `Tailscale 계정 · ${login}`,
+  lost: "연결이 끊겼습니다 · 다시 연결하는 중",
+  herdrDown: "herdr 가 응답하지 않습니다",
+  back: "뒤로",
+  toList: "목록으로",
+  agentGone: "이 에이전트는 더 이상 없습니다.",
+  connectScreen: "연결 화면",
+  spaces: "Spaces",
+  agents: "에이전트",
+  agentCount: (n) => `에이전트 ${n}`,
+  pickAgent: "왼쪽에서 에이전트를 고르세요.",
+  noAgents: "이 space 에는 에이전트가 없습니다.",
+  more: "더 보기",
+  tools: (n) => `도구 ${n}`,
+  failed: (n) => `실패 ${n}`,
+  clipped: "앞부분은 생략했습니다",
+  loadingChat: "대화를 불러오는 중…",
+  noTranscript: "이 에이전트의 대화 기록을 찾지 못했습니다. 「화면」에서 보세요.",
+  chatError: "대화를 불러오지 못했습니다.",
+  compacted: "대화를 압축했습니다",
+  pending: { sending: "보내는 중", typed: "입력됨", unconfirmed: "아직 안 보임 — 「화면」을 확인하세요" },
+  queued: "대기 중 — 지금 하던 일이 끝나면 읽습니다",
+  received: "받음",
+  suggestions: "추천",
+  kind: { builtin: "기본", skill: "스킬", command: "명령" },
+  newMessages: "새 메시지",
+  menuChanged: "선택지가 바뀌었습니다. 다시 확인하세요.",
+  needsAnswer: "답이 필요합니다",
+  choices: "선택지",
+  keys: "키",
+  keyButtons: "키 버튼",
+  typeRaw: "화면에 그대로 입력",
+  message: "메시지 보내기",
+  send: "보내기",
+  answerFirst: "선택지에 먼저 답하세요.",
+  tabChat: "대화",
+  tabScreen: "화면",
+  readingScreen: "화면을 읽는 중…",
+  language: "언어",
+};
+
+const ja: Strings = {
+  status: { working: "作業中", blocked: "要対応", done: "完了", idle: "待機", unknown: "不明" },
+  offline: "接続できません",
+  checking: "接続を確認しています…",
+  connected: (herdr, agents) => `接続済み · herdr ${herdr} · エージェント ${agents}`,
+  connect: "接続",
+  autoConnect: "次回から自動で接続",
+  hintPhone: "スマホの Tailscale がオンか、PC がスリープしていないか確認してください。",
+  hintDevice: "この端末の Tailscale がオンか、PC がスリープしていないか確認してください。",
+  openTailscale: "Tailscale を開く",
+  retry: "再試行",
+  account: (login) => `Tailscale アカウント · ${login}`,
+  lost: "接続が切れました · 再接続中",
+  herdrDown: "herdr が応答しません",
+  back: "戻る",
+  toList: "一覧へ",
+  agentGone: "このエージェントはもうありません。",
+  connectScreen: "接続画面",
+  spaces: "Spaces",
+  agents: "エージェント",
+  agentCount: (n) => `エージェント ${n}`,
+  pickAgent: "左からエージェントを選んでください。",
+  noAgents: "この space にはエージェントがいません。",
+  more: "もっと見る",
+  tools: (n) => `ツール ${n}`,
+  failed: (n) => `失敗 ${n}`,
+  clipped: "以前のメッセージは省略しています",
+  loadingChat: "会話を読み込んでいます…",
+  noTranscript: "このエージェントの会話記録が見つかりません。「画面」で確認してください。",
+  chatError: "会話を読み込めませんでした。",
+  compacted: "会話を圧縮しました",
+  pending: { sending: "送信中", typed: "入力済み", unconfirmed: "まだ見えません — 「画面」を確認してください" },
+  queued: "待機中 — 今の作業が終わると読みます",
+  received: "受信済み",
+  suggestions: "候補",
+  kind: { builtin: "標準", skill: "スキル", command: "コマンド" },
+  newMessages: "新着メッセージ",
+  menuChanged: "選択肢が変わりました。もう一度確認してください。",
+  needsAnswer: "回答が必要です",
+  choices: "選択肢",
+  keys: "キー",
+  keyButtons: "キーボタン",
+  typeRaw: "画面にそのまま入力",
+  message: "メッセージを送信",
+  send: "送信",
+  answerFirst: "先に選択肢に答えてください。",
+  tabChat: "会話",
+  tabScreen: "画面",
+  readingScreen: "画面を読み込んでいます…",
+  language: "言語",
+};
+
+const zh: Strings = {
+  status: { working: "工作中", blocked: "等你回复", done: "已完成", idle: "空闲", unknown: "未知" },
+  offline: "无法连接",
+  checking: "正在检查连接…",
+  connected: (herdr, agents) => `已连接 · herdr ${herdr} · ${agents} 个智能体`,
+  connect: "连接",
+  autoConnect: "下次自动连接",
+  hintPhone: "请确认手机上的 Tailscale 已开启，并且电脑没有休眠。",
+  hintDevice: "请确认此设备上的 Tailscale 已开启，并且电脑没有休眠。",
+  openTailscale: "打开 Tailscale",
+  retry: "重试",
+  account: (login) => `Tailscale 账号 · ${login}`,
+  lost: "连接已断开 · 正在重连",
+  herdrDown: "herdr 没有响应",
+  back: "返回",
+  toList: "返回列表",
+  agentGone: "这个智能体已经不在了。",
+  connectScreen: "连接页面",
+  spaces: "Spaces",
+  agents: "智能体",
+  agentCount: (n) => `${n} 个智能体`,
+  pickAgent: "请在左侧选择一个智能体。",
+  noAgents: "这个 space 里没有智能体。",
+  more: "显示更多",
+  tools: (n) => `${n} 个工具`,
+  failed: (n) => `${n} 个失败`,
+  clipped: "较早的消息已省略",
+  loadingChat: "正在加载对话…",
+  noTranscript: "找不到这个智能体的对话记录。请在「屏幕」中查看。",
+  chatError: "无法加载对话。",
+  compacted: "对话已压缩",
+  pending: { sending: "发送中", typed: "已输入", unconfirmed: "还没看到 — 请查看「屏幕」" },
+  queued: "排队中 — 当前工作结束后读取",
+  received: "已收到",
+  suggestions: "建议",
+  kind: { builtin: "内置", skill: "技能", command: "命令" },
+  newMessages: "新消息",
+  menuChanged: "选项已变化，请重新查看。",
+  needsAnswer: "需要你回答",
+  choices: "选项",
+  keys: "按键",
+  keyButtons: "按键按钮",
+  typeRaw: "直接输入到屏幕",
+  message: "发送消息",
+  send: "发送",
+  answerFirst: "请先回答选项。",
+  tabChat: "对话",
+  tabScreen: "屏幕",
+  readingScreen: "正在读取屏幕…",
+  language: "语言",
+};
+
+/** Each language under its own name, the way a person looks for theirs in a list. */
+export const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "ko", name: "한국어" },
+  { code: "ja", name: "日本語" },
+  { code: "zh", name: "简体中文" },
+] as const;
+
+export type Lang = (typeof LANGUAGES)[number]["code"];
+
+const DICTIONARIES: Record<Lang, Strings> = { en, ko, ja, zh };
+const STORE_KEY = "lang";
+
+function chosen(): Lang | null {
+  try {
+    const v = localStorage.getItem(STORE_KEY);
+    return v && v in DICTIONARIES ? (v as Lang) : null;
+  } catch {
+    return null;
+  }
+}
+
+function fromBrowser(): Lang {
+  for (const tag of navigator.languages ?? [navigator.language]) {
+    const base = (tag ?? "").toLowerCase().split("-")[0];
+    if (base && base in DICTIONARIES) return base as Lang;
+  }
+  return "en";
+}
+
+/** The language picked on screen, else the first browser language there is a dictionary for, else English. */
+export const lang: Lang = chosen() ?? fromBrowser();
+export const t: Strings = DICTIONARIES[lang];
+document.documentElement.lang = lang;
+
+/** Every string is read once at start, so switching reloads the page in the new language. */
+export function setLang(next: Lang) {
+  try {
+    localStorage.setItem(STORE_KEY, next);
+  } catch {
+    /* private mode: the browser language stays in charge */
+  }
+  location.reload();
+}

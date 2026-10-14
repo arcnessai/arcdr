@@ -5,7 +5,9 @@ import { ChatView } from "./chat";
 import { ConnectView, type Conn } from "./connect";
 import { counts } from "./format";
 import * as I from "./icons";
+import { LangPicker } from "./langpicker";
 import { AgentList, SpaceCard, SpaceRow, Summary } from "./lists";
+import { t } from "./i18n";
 
 type Route = { name: "connect" } | { name: "spaces" } | { name: "space"; space: string } | { name: "agent"; pane: string };
 
@@ -70,9 +72,9 @@ function Banner({ live, onRetry }: { live: Live; onRetry: () => void }) {
   if (live === "up" || live === "waiting") return null;
   return (
     <div class="banner" role="status">
-      {live === "lost" ? "연결이 끊겼습니다 · 다시 연결하는 중" : "herdr 가 응답하지 않습니다"}
+      {live === "lost" ? t.lost : t.herdrDown}
       <button class="link-btn" onClick={onRetry}>
-        다시 시도
+        {t.retry}
       </button>
     </div>
   );
@@ -82,7 +84,7 @@ function TopBar({ title, back, machine, children }: { title: string; back?: stri
   return (
     <header class="topbar">
       {back !== undefined ? (
-        <a class="icon-btn" href={back} aria-label="뒤로">
+        <a class="icon-btn" href={back} aria-label={t.back}>
           <I.Back />
         </a>
       ) : (
@@ -188,9 +190,9 @@ function App() {
   const lostAgent =
     route.name === "agent" && !agent ? (
       <div class="placeholder">
-        <p>이 에이전트는 더 이상 없습니다.</p>
+        <p>{t.agentGone}</p>
         <a class="btn btn-ghost" href={`#/s/${encodeURIComponent(firstSpace)}`}>
-          목록으로
+          {t.toList}
         </a>
       </div>
     ) : null;
@@ -199,21 +201,24 @@ function App() {
     return (
       <div class="shell">
         <aside class="sidebar">
-          <a class="side-head" href="#/" title="연결 화면">
+          <a class="side-head" href="#/" title={t.connectScreen}>
             <I.Mark size={22} />
             <span class="side-machine">{health?.machine ?? machine}</span>
             <span class={`conn-dot conn-${live === "up" ? "online" : "offline"}`} />
           </a>
-          <p class="side-label">Spaces</p>
+          <p class="side-label">{t.spaces}</p>
           <nav class="space-rows">
             {snap.spaces.map((s) => (
               <SpaceRow key={s.id} space={s} agents={snap.agents.filter((a) => a.space === s.id)} selected={s.id === spaceId} />
             ))}
           </nav>
           <p class="side-label">
-            에이전트 <span class="side-count">{spaceAgents.length}</span>
+            {t.agents} <span class="side-count">{spaceAgents.length}</span>
           </p>
           <AgentList agents={spaceAgents} selected={agent?.pane ?? null} />
+          <div class="side-foot">
+            <LangPicker />
+          </div>
         </aside>
         <main class="main">
           {banner}
@@ -223,7 +228,7 @@ function App() {
             (lostAgent ?? (
               <div class="placeholder">
                 <I.Mark size={48} />
-                <p>왼쪽에서 에이전트를 고르세요.</p>
+                <p>{t.pickAgent}</p>
                 {space && <Summary c={counts(spaceAgents)} />}
               </div>
             ))
@@ -258,7 +263,7 @@ function App() {
 
   return (
     <div class="screen-wrap">
-      <TopBar title="Spaces" back="#/" machine={health?.machine ?? machine} />
+      <TopBar title={t.spaces} back="#/" machine={health?.machine ?? machine} />
       {banner}
       <div class="scroll">
         <div class="space-cards">

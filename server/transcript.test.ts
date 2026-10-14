@@ -137,3 +137,22 @@ describe("readTail widening", () => {
     expect(readTail(file, { window: 500, minTalk: 5, maxWindow: 500 }).items).toHaveLength(0);
   });
 });
+
+describe("queue operations", () => {
+  const q = (operation: string, content?: string) => line({ type: "queue-operation", operation, timestamp: `t-${operation}-${content ?? ""}`, ...(content === undefined ? {} : { content }) });
+  const items = parseEntries([
+    q("enqueue", "이것도 봐줘"),
+    q("enqueue", "<task-notification><summary>done</summary></task-notification>"),
+    q("remove", "이것도 봐줘"),
+    q("dequeue"),
+  ]);
+
+  test("a message sent while the agent works is added, then removed or taken", () => {
+    expect(items.map((i) => (i.kind === "queue" ? [i.op, i.text, i.hidden] : i.kind))).toEqual([
+      ["add", "이것도 봐줘", false],
+      ["add", "<task-notification><summary>done</summary></task-notification>", true],
+      ["remove", "이것도 봐줘", false],
+      ["take", "", false],
+    ]);
+  });
+});

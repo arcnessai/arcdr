@@ -1,5 +1,7 @@
 import type { Health } from "./api";
 import * as I from "./icons";
+import { LangPicker } from "./langpicker";
+import { t } from "./i18n";
 
 export type Conn = "checking" | "online" | "offline";
 
@@ -36,44 +38,41 @@ export function ConnectView(props: {
           {conn === "online" && <span class="machine-tag">Tailscale</span>}
         </div>
 
-        {conn === "checking" && <p class="machine-line">연결을 확인하는 중…</p>}
+        {conn === "checking" && <p class="machine-line">{t.checking}</p>}
 
         {conn === "online" && health && (
           <>
-            <p class="machine-line">
-              연결됨 · herdr {health.herdr} · 에이전트 {health.agents}
-            </p>
+            <p class="machine-line">{t.connected(health.herdr, health.agents)}</p>
             <button class="btn btn-primary btn-block" onClick={props.onConnect}>
-              연결
+              {t.connect}
             </button>
             <label class="check">
               <input type="checkbox" checked={auto} onChange={(e) => props.onAuto((e.target as HTMLInputElement).checked)} />
-              다음부터 바로 연결
+              {t.autoConnect}
             </label>
           </>
         )}
 
         {conn === "offline" && (
           <>
-            <p class="machine-line">연결할 수 없습니다</p>
-            <p class="machine-hint">
-              {IS_ANDROID ? "폰의 Tailscale 이 켜져 있는지" : "이 기기의 Tailscale 이 켜져 있는지"}, PC 가 깨어 있는지 확인하세요.
-            </p>
+            <p class="machine-line">{t.offline}</p>
+            <p class="machine-hint">{IS_ANDROID ? t.hintPhone : t.hintDevice}</p>
             <div class="btn-row">
               {IS_ANDROID && (
                 <a class="btn btn-primary" href={TAILSCALE_APP}>
-                  Tailscale 열기
+                  {t.openTailscale}
                 </a>
               )}
               <button class={`btn ${IS_ANDROID ? "btn-ghost" : "btn-primary"}`} onClick={props.onRetry}>
-                <I.Refresh size={16} /> 다시 시도
+                <I.Refresh size={16} /> {t.retry}
               </button>
             </div>
           </>
         )}
       </section>
 
-      {conn === "online" && health && <p class="connect-foot">Tailscale 계정 · {health.login}</p>}
+      {conn === "online" && health && <p class="connect-foot">{t.account(health.login)}</p>}
+      <LangPicker />
     </main>
   );
 }

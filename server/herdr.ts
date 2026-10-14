@@ -83,6 +83,8 @@ export interface Agent {
   kind: string;
   tokens: Record<string, string>;
   sessionId: string | null;
+  /** Where the agent's process runs; slash commands and @-paths are looked up from here. */
+  cwd: string;
 }
 
 export interface Snapshot {
@@ -134,6 +136,7 @@ export function normalizeSnapshot(raw: any): Snapshot {
       kind: String(a.agent ?? "agent"),
       tokens: tokens(a.tokens),
       sessionId: session?.kind === "id" && typeof session.value === "string" ? session.value : null,
+      cwd: String(a.foreground_cwd ?? a.cwd ?? ""),
     };
   });
   agents.sort((a, b) => a.tabNumber - b.tabNumber || a.pane.localeCompare(b.pane));

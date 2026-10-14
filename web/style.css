@@ -393,6 +393,22 @@ p {
   font-size: 13px;
 }
 
+.lang-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 13px;
+}
+.lang-picker select {
+  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
 /* ---------- phone screens ---------- */
 
 .screen-wrap {
@@ -640,6 +656,11 @@ p {
 .sidebar .row-chev {
   display: none;
 }
+.side-foot {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
 .main {
   position: relative;
   min-width: 0;
@@ -772,9 +793,24 @@ p {
 .pending .bubble {
   opacity: 0.72;
 }
+.pending.is-queued .bubble {
+  opacity: 1;
+  outline: 1px dashed var(--yellow);
+  outline-offset: -1px;
+  background: transparent;
+}
 .pending-state {
   color: var(--dim);
   font-size: 11px;
+}
+.is-queued .pending-state {
+  color: var(--yellow);
+}
+.is-unconfirmed .pending-state {
+  color: var(--orange);
+}
+.pending-state.is-received {
+  color: var(--green);
 }
 .msg-assistant {
   align-self: stretch;
@@ -1177,9 +1213,72 @@ p {
 }
 
 .composer {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 6px;
+}
+
+.suggest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 5;
+  max-height: min(42dvh, 340px);
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.3);
+}
+.suggest button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.suggest button[aria-selected="true"],
+.suggest button:hover {
+  background: var(--surface-2);
+}
+.sg-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sg-skill,
+.sg-command {
+  color: var(--purple);
+}
+.sg-builtin {
+  color: var(--cyan);
+}
+.sg-dir {
+  color: var(--cyan);
+}
+.sg-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.sg-kind {
+  color: var(--dim);
+  font-size: 11px;
 }
 .composer textarea {
   flex: 1;
@@ -1195,6 +1294,7 @@ p {
   line-height: 1.45;
   resize: none;
   outline: none;
+  overflow-y: hidden;
 }
 .composer textarea:focus {
   border-color: var(--accent);

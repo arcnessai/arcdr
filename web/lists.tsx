@@ -1,6 +1,7 @@
 import type { Agent, AgentStatus, Space } from "./api";
 import { agentName, agentSubtitle, counts, stageTone, STATUS_LABEL, type Counts } from "./format";
 import * as I from "./icons";
+import { t } from "./i18n";
 
 export function StatusDot({ status }: { status: AgentStatus }) {
   return (
@@ -60,9 +61,9 @@ export function AgentRow({ agent, selected }: { agent: Agent; selected: boolean 
 }
 
 export function AgentList({ agents, selected }: { agents: Agent[]; selected: string | null }) {
-  if (agents.length === 0) return <p class="empty">이 space 에는 에이전트가 없습니다.</p>;
+  if (agents.length === 0) return <p class="empty">{t.noAgents}</p>;
   return (
-    <nav class="agent-list" aria-label="에이전트">
+    <nav class="agent-list" aria-label={t.agents}>
       {agents.map((a) => (
         <AgentRow key={a.pane} agent={a} selected={a.pane === selected} />
       ))}
@@ -76,7 +77,7 @@ export function SpaceCard({ space, agents }: { space: Space; agents: Agent[] }) 
     <a class={`space-card${c.blocked ? " has-blocked" : ""}`} href={`#/s/${encodeURIComponent(space.id)}`}>
       <span class="space-main">
         <span class="space-name">{space.label}</span>
-        <span class="space-meta">에이전트 {c.total}</span>
+        <span class="space-meta">{t.agentCount(c.total)}</span>
         <Summary c={c} />
       </span>
       <I.Chevron size={20} class="row-chev" />

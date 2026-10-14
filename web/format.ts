@@ -1,12 +1,7 @@
 import type { Agent, AgentStatus } from "./api";
+import { t } from "./i18n";
 
-export const STATUS_LABEL: Record<AgentStatus, string> = {
-  working: "작업 중",
-  blocked: "답 필요",
-  done: "끝남",
-  idle: "대기",
-  unknown: "모름",
-};
+export const STATUS_LABEL: Record<AgentStatus, string> = t.status;
 
 /** Same colours as the `$stage` rules in ~/.config/herdr/config.toml, keyed by the stage's first symbol. */
 export function stageTone(stage: string): string {

@@ -11,9 +11,16 @@ export type ChatItem =
   | { id: string; kind: "assistant"; text: string; at: string | null }
   | { id: string; kind: "tool"; name: string; summary: string; detail: string; at: string | null }
   | { id: string; kind: "ask"; questions: AskQuestion[]; at: string | null }
-  | { id: string; kind: "note"; text: string; at: string | null }
+  /** code names a note the screen words itself, in its own language. */
+  | { id: string; kind: "note"; text: string; code?: "compacted"; at: string | null }
   /** Marks an earlier tool item as failed; tool results arrive on a later line than their call. */
-  | { id: string; kind: "tool-error"; target: string };
+  | { id: string; kind: "tool-error"; target: string }
+  /**
+   * Claude Code's input queue: a message sent while the agent works is added, and leaves when the agent
+   * reads it — removed by content mid-turn, or taken from the front at the end of a turn. Notifications
+   * queue the same way, so they are kept (hidden) to keep the order of takes right.
+   */
+  | { id: string; kind: "queue"; op: "add" | "remove" | "take"; text: string; hidden: boolean };
 
 export interface AskQuestion {
   question: string;
@@ -119,7 +126,7 @@ function promptText(content: unknown): string {
     .map((b) => {
       const block = obj(b);
       if (block.type === "text") return str(block.text);
-      if (block.type === "image") return "[이미지]";
+      if (block.type === "image") return "[image]";
       return "";
     })
     .filter(Boolean)
@@ -174,8 +181,23 @@ export function parseEntries(lines: string[]): ChatItem[] {
       continue;
     }
 
+    if (e.type === "queue-operation") {
+      const op = e.operation === "enqueue" ? "add" : e.operation === "remove" ? "remove" : e.operation === "dequeue" ? "take" : null;
+      if (op) {
+        const said = userText(str(e.content));
+        items.push({
+          id: `queue:${str(e.timestamp)}:${op}:${items.length}`,
+          kind: "queue",
+          op,
+          text: said?.text ?? str(e.content),
+          hidden: op !== "take" && said?.kind !== "user",
+        });
+      }
+      continue;
+    }
+
     if (e.type === "system") {
-      if (e.subtype === "compact_boundary") items.push({ id, kind: "note", text: "대화를 압축했습니다", at });
+      if (e.subtype === "compact_boundary") items.push({ id, kind: "note", text: "", code: "compacted", at });
       continue;
     }
 

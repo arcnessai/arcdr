@@ -1,8 +1,10 @@
 import type { Agent, AgentStatus, Snapshot, Space } from "../server/herdr";
+import type { Suggestion } from "../server/complete";
 import type { Menu } from "../server/screen";
 import type { ChatItem, Chunk } from "../server/transcript";
+import { t } from "./i18n";
 
-export type { Agent, AgentStatus, ChatItem, Menu, Snapshot, Space };
+export type { Agent, AgentStatus, ChatItem, Menu, Snapshot, Space, Suggestion };
 
 export interface Health {
   machine: string;
@@ -44,7 +46,7 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 10_0
     return body as T;
   } catch (e) {
     if (e instanceof ApiError) throw e;
-    throw new ApiError(0, "offline", "연결할 수 없습니다");
+    throw new ApiError(0, "offline", t.offline);
   } finally {
     clearTimeout(timer);
   }
@@ -60,6 +62,8 @@ export const api = {
   chat: (pane: string, offset: number, file: string | null) =>
     request<ChatChunk>(`${agentPath(pane, "chat")}?offset=${offset}&file=${encodeURIComponent(file ?? "")}`),
   screen: (pane: string) => request<ScreenRead>(agentPath(pane, "screen")),
+  complete: (pane: string, kind: "slash" | "file", q: string) =>
+    request<{ items: Suggestion[] }>(`${agentPath(pane, "complete")}?kind=${kind}&q=${encodeURIComponent(q)}`),
   send: (pane: string, text: string) => post(agentPath(pane, "send"), { text }),
   type: (pane: string, text: string, enter: boolean) => post(agentPath(pane, "type"), { text, enter }),
   keys: (pane: string, keys: string[]) => post(agentPath(pane, "keys"), { keys }),

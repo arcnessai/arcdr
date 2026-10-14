@@ -1,19 +1,34 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { api, ApiError, type Agent, type ChatItem, type Menu } from "./api";
+import { api, ApiError, type Agent, type ChatItem, type Menu, type Suggestion } from "./api";
 import { agentName, agentSubtitle, STATUS_LABEL } from "./format";
 import * as I from "./icons";
 import { Stage, StatusDot } from "./lists";
 import { Markdown } from "./markdown";
+import { tokenAt, type Token } from "./token";
+import { t } from "./i18n";
 
-type Shown = Exclude<ChatItem, { kind: "tool-error" }>;
+type Shown = Exclude<ChatItem, { kind: "tool-error" } | { kind: "queue" }>;
+type QueueOp = Extract<ChatItem, { kind: "queue" }>;
 type Tool = Extract<ChatItem, { kind: "tool" }>;
 type Row = { kind: "item"; item: Shown } | { kind: "tools"; id: string; tools: Tool[] };
 
+/**
+ * A message sent from here, until the transcript shows it: sending (the request is out), typed (herdr put it
+ * into the terminal), unconfirmed (typed, but neither the queue nor the conversation shows it after a while —
+ * it may be sitting in the input box). Once Claude Code queues it, the queue shows it; once read, the conversation.
+ */
 interface Pending {
   id: number;
   text: string;
   at: number;
-  state: "sending" | "sent" | "failed";
+  state: "sending" | "typed" | "unconfirmed";
+}
+
+const UNCONFIRMED_AFTER_MS = 30_000;
+
+/** The same message as the transcript records it: line endings and surrounding space may differ. */
+export function same(text: string): string {
+  return text.replace(/\r\n/g, "\n").trim();
 }
 
 const COARSE = matchMedia("(pointer: coarse)").matches;
@@ -52,13 +67,28 @@ function useChat(pane: string, polling: boolean) {
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const [state, setState] = useState<"loading" | "ready" | "none" | "error">("loading");
   const [clipped, setClipped] = useState(false);
+  const [queue, setQueue] = useState<string[]>([]);
   const cursor = useRef<{ offset: number; file: string | null }>({ offset: 0, file: null });
+  const queueRef = useRef<{ text: string; hidden: boolean }[]>([]);
 
   const absorb = useCallback((incoming: ChatItem[], replace: boolean) => {
     const errors = incoming.filter((i) => i.kind === "tool-error").map((i) => (i as { target: string }).target);
     if (errors.length) setFailed((f) => new Set([...(replace ? [] : f), ...errors]));
     else if (replace) setFailed(new Set());
-    const shown = incoming.filter((i): i is Shown => i.kind !== "tool-error");
+
+    if (replace) queueRef.current = [];
+    for (const op of incoming.filter((i): i is QueueOp => i.kind === "queue")) {
+      const q = queueRef.current;
+      if (op.op === "add") q.push({ text: op.text, hidden: op.hidden });
+      else if (op.op === "take") q.shift();
+      else {
+        const at = q.findIndex((x) => x.text === op.text);
+        if (at >= 0) q.splice(at, 1);
+      }
+    }
+    setQueue(queueRef.current.filter((x) => !x.hidden).map((x) => x.text));
+
+    const shown = incoming.filter((i): i is Shown => i.kind !== "tool-error" && i.kind !== "queue");
     setItems((prev) => {
       if (replace) return shown;
       if (shown.length === 0) return prev;
@@ -83,6 +113,8 @@ function useChat(pane: string, polling: boolean) {
 
   useEffect(() => {
     cursor.current = { offset: 0, file: null };
+    queueRef.current = [];
+    setQueue([]);
     setItems([]);
     setFailed(new Set());
     setState("loading");
@@ -91,11 +123,11 @@ function useChat(pane: string, polling: boolean) {
 
   useEffect(() => {
     if (!polling) return;
-    const t = setInterval(() => pull().catch(() => {}), 1500);
-    return () => clearInterval(t);
+    const timer = setInterval(() => pull().catch(() => {}), 1500);
+    return () => clearInterval(timer);
   }, [pull, polling]);
 
-  return { items, failed, state, clipped };
+  return { items, failed, state, clipped, queue };
 }
 
 /** The visible terminal and any menu on it. */
@@ -139,7 +171,7 @@ function LongText({ text, latest }: { text: string; latest: boolean }) {
     <>
       <Markdown text={text.slice(0, 1600) + "…"} />
       <button class="link-btn" onClick={() => setOpen(true)}>
-        더 보기
+        {t.more}
       </button>
     </>
   );
@@ -154,8 +186,8 @@ function ToolGroup({ tools, failed }: { tools: Tool[]; failed: Set<string> }) {
     <div class={`tools${open ? " open" : ""}`}>
       <button class="tools-head" onClick={() => setOpen(!open)} aria-expanded={open}>
         <I.Wrench size={14} />
-        <span class="tools-count">도구 {tools.length}</span>
-        {errors > 0 && <span class="tools-err">실패 {errors}</span>}
+        <span class="tools-count">{t.tools(tools.length)}</span>
+        {errors > 0 && <span class="tools-err">{t.failed(errors)}</span>}
         {!open && (
           <span class="tools-last">
             <b>{last.name}</b> {last.summary}
@@ -178,12 +210,13 @@ function ToolGroup({ tools, failed }: { tools: Tool[]; failed: Set<string> }) {
   );
 }
 
-function Message({ item, latest }: { item: Shown; latest: boolean }) {
+function Message({ item, latest, mine }: { item: Shown; latest: boolean; mine: boolean }) {
   switch (item.kind) {
     case "user":
       return (
         <div class="msg msg-user">
           <div class="bubble">{item.text}</div>
+          {mine && <span class="pending-state is-received">✓ {t.received}</span>}
         </div>
       );
     case "assistant":
@@ -208,13 +241,21 @@ function Message({ item, latest }: { item: Shown; latest: boolean }) {
         </div>
       );
     case "note":
-      return <div class="msg msg-note">{item.text}</div>;
+      return <div class="msg msg-note">{item.code === "compacted" ? t.compacted : item.text}</div>;
     case "tool":
       return null;
   }
 }
 
-function Messages(props: { rows: Row[]; failed: Set<string>; pending: Pending[]; state: string; clipped: boolean }) {
+function Messages(props: {
+  rows: Row[];
+  failed: Set<string>;
+  pending: Pending[];
+  queue: string[];
+  mine: Set<string>;
+  state: string;
+  clipped: boolean;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
   const [behind, setBehind] = useState(false);
@@ -230,7 +271,7 @@ function Messages(props: { rows: Row[]; failed: Set<string>; pending: Pending[];
     if (!el) return;
     if (atBottom.current) el.scrollTop = el.scrollHeight;
     else setBehind(true);
-  }, [props.rows.length, props.pending.length, props.rows[props.rows.length - 1]]);
+  }, [props.rows.length, props.pending.length, props.queue.length, props.rows[props.rows.length - 1]]);
 
   // The newest answer is what the person came to read, so it is never folded.
   let lastAssistant: string | null = null;
@@ -245,27 +286,38 @@ function Messages(props: { rows: Row[]; failed: Set<string>; pending: Pending[];
   return (
     <div class="messages" ref={box} onScroll={onScroll}>
       <div class="messages-inner">
-        {props.clipped && <p class="msg msg-note">앞부분은 생략했습니다</p>}
-        {props.state === "loading" && <p class="msg msg-note">대화를 불러오는 중…</p>}
-        {props.state === "none" && <p class="msg msg-note">이 에이전트의 대화 기록을 찾지 못했습니다. 「화면」에서 보세요.</p>}
-        {props.state === "error" && <p class="msg msg-note">대화를 불러오지 못했습니다.</p>}
+        {props.clipped && <p class="msg msg-note">{t.clipped}</p>}
+        {props.state === "loading" && <p class="msg msg-note">{t.loadingChat}</p>}
+        {props.state === "none" && <p class="msg msg-note">{t.noTranscript}</p>}
+        {props.state === "error" && <p class="msg msg-note">{t.chatError}</p>}
         {props.rows.map((r) =>
           r.kind === "tools" ? (
             <ToolGroup key={r.id} tools={r.tools} failed={props.failed} />
           ) : (
-            <Message key={r.item.id} item={r.item} latest={r.item.id === lastAssistant} />
+            <Message
+              key={r.item.id}
+              item={r.item}
+              latest={r.item.id === lastAssistant}
+              mine={r.item.kind === "user" && props.mine.has(same(r.item.text))}
+            />
           ),
         )}
+        {props.queue.map((text, i) => (
+          <div key={`q${i}`} class="msg msg-user pending is-queued">
+            <div class="bubble">{text}</div>
+            <span class="pending-state">{t.queued}</span>
+          </div>
+        ))}
         {props.pending.map((p) => (
           <div key={p.id} class={`msg msg-user pending is-${p.state}`}>
             <div class="bubble">{p.text}</div>
-            <span class="pending-state">{p.state === "failed" ? "못 보냄" : p.state === "sending" ? "보내는 중" : "보냄"}</span>
+            <span class="pending-state">{t.pending[p.state]}</span>
           </div>
         ))}
       </div>
       {behind && (
         <button class="to-bottom" onClick={toBottom}>
-          <I.Down size={16} /> 새 메시지
+          <I.Down size={16} /> {t.newMessages}
         </button>
       )}
     </div>
@@ -280,7 +332,7 @@ function MenuPanel(props: { pane: string; menu: Menu; onResult: (r: { text: stri
     try {
       props.onResult(await api.choose(props.pane, n, label));
     } catch (e) {
-      props.onError(e instanceof ApiError && e.code === "changed" ? "선택지가 바뀌었습니다. 다시 확인하세요." : e instanceof ApiError ? e.message : String(e));
+      props.onError(e instanceof ApiError && e.code === "changed" ? t.menuChanged : e instanceof ApiError ? e.message : String(e));
     } finally {
       setBusy(null);
     }
@@ -295,9 +347,9 @@ function MenuPanel(props: { pane: string; menu: Menu; onResult: (r: { text: stri
     if (detailBox.current) detailBox.current.scrollTop = detailBox.current.scrollHeight;
   }, [detail]);
   return (
-    <section class="menu-panel" aria-label="선택지">
+    <section class="menu-panel" aria-label={t.choices}>
       <p class="menu-head">
-        <span class="menu-badge">답이 필요합니다</span>
+        <span class="menu-badge">{t.needsAnswer}</span>
       </p>
       {detail && (
         <pre class="menu-context" ref={detailBox}>
@@ -345,7 +397,7 @@ function KeyBar({ pane, onError }: { pane: string; onError: (m: string) => void 
     api.keys(pane, [key]).catch((e) => onError(e instanceof ApiError ? e.message : String(e)));
   };
   return (
-    <div class="keybar" role="toolbar" aria-label="키">
+    <div class="keybar" role="toolbar" aria-label={t.keys}>
       {KEYS.map((k) => (
         <button key={k.key} class={`key${k.wide ? " key-wide" : ""}`} onClick={() => press(k.key)}>
           {k.label}
@@ -355,28 +407,94 @@ function KeyBar({ pane, onError }: { pane: string; onError: (m: string) => void 
   );
 }
 
+function useSuggestions(pane: string, token: Token | null): Suggestion[] {
+  const [items, setItems] = useState<Suggestion[]>([]);
+  const key = token ? `${token.kind}:${token.query}` : "";
+  useEffect(() => {
+    if (!token) {
+      setItems([]);
+      return;
+    }
+    let live = true;
+    const timer = setTimeout(
+      () =>
+        api
+          .complete(pane, token.kind, token.query)
+          .then((r) => live && setItems(r.items))
+          .catch(() => live && setItems([])),
+      token.kind === "file" ? 120 : 40,
+    );
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+    // The token object is new on every keystroke; its kind and query are what matter.
+  }, [pane, key]);
+  return items;
+}
+
 function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boolean>; keysOpen: boolean; onKeys: () => void }) {
   const draftKey = `draft:${props.agent.pane}`;
   const [text, setText] = useState(() => stored(draftKey));
+  const [caret, setCaret] = useState(0);
   const [sending, setSending] = useState(false);
+  const [active, setActive] = useState(0);
+  const [dismissed, setDismissed] = useState<string | null>(null);
   const area = useRef<HTMLTextAreaElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+
+  const token = tokenAt(text, caret);
+  const tokenKey = token ? `${token.kind}:${token.start}:${token.query}` : null;
+  const suggestions = useSuggestions(props.agent.pane, tokenKey !== null && tokenKey !== dismissed ? token : null);
+  const open = token !== null && tokenKey !== dismissed && suggestions.length > 0;
 
   useEffect(() => setText(stored(draftKey)), [draftKey]);
   useEffect(() => store(draftKey, text), [draftKey, text]);
+  useEffect(() => setActive(0), [tokenKey]);
+  useEffect(() => {
+    list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [active]);
   useLayoutEffect(() => {
     const el = area.current;
     if (!el) return;
+    // scrollHeight leaves out the border, and the box is border-box: without adding it back the box is
+    // two pixels short and grows a scrollbar — the thin vertical line at its right edge.
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, Math.round(window.innerHeight * 0.35))}px`;
+    const cs = getComputedStyle(el);
+    const want = el.scrollHeight + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+    const max = Math.round(window.innerHeight * 0.35);
+    el.style.height = `${Math.min(want, max)}px`;
+    el.style.overflowY = want > max ? "auto" : "hidden";
   }, [text]);
 
+  const syncCaret = () => setCaret(area.current?.selectionStart ?? 0);
+
+  const accept = (s: Suggestion) => {
+    if (!token) return;
+    // A directory keeps the list open for the next level; anything else ends with a space.
+    const insert = token.kind === "slash" ? `${s.value} ` : `@${s.value}${s.kind === "dir" ? "" : " "}`;
+    const next = text.slice(0, token.start) + insert + text.slice(token.end);
+    const pos = token.start + insert.length;
+    setText(next);
+    setCaret(pos);
+    requestAnimationFrame(() => {
+      const el = area.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
   const submit = async () => {
-    const t = text.trim();
-    if (!t || sending) return;
+    const body = text.trim();
+    if (!body || sending) return;
     setSending(true);
-    const ok = await props.onSend(t);
+    const ok = await props.onSend(body);
     setSending(false);
-    if (ok) setText("");
+    if (ok) {
+      setText("");
+      setCaret(0);
+    }
   };
 
   const blocked = props.agent.status === "blocked";
@@ -388,7 +506,27 @@ function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boole
         void submit();
       }}
     >
-      <button type="button" class="icon-btn" aria-pressed={props.keysOpen} aria-label="키 버튼" onClick={props.onKeys}>
+      {open && (
+        <ul class="suggest" role="listbox" aria-label={t.suggestions} ref={list}>
+          {suggestions.map((s, i) => (
+            <li key={s.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={i === active}
+                // Keep the focus (and the phone keyboard) in the text box.
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => accept(s)}
+              >
+                <span class={`sg-value sg-${s.kind}`}>{s.value}</span>
+                {s.detail && <span class="sg-detail">{s.detail}</span>}
+                {s.kind !== "file" && s.kind !== "dir" && <span class="sg-kind">{t.kind[s.kind]}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button type="button" class="icon-btn" aria-pressed={props.keysOpen} aria-label={t.keyButtons} onClick={props.onKeys}>
         <I.Keyboard />
       </button>
       <textarea
@@ -396,18 +534,46 @@ function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boole
         rows={1}
         value={text}
         enterkeyhint={COARSE ? "enter" : "send"}
-        placeholder={blocked ? "화면에 그대로 입력" : "메시지 보내기"}
-        onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
+        placeholder={blocked ? t.typeRaw : t.message}
+        aria-autocomplete="list"
+        aria-expanded={open}
+        onInput={(e) => {
+          setText((e.target as HTMLTextAreaElement).value);
+          syncCaret();
+        }}
+        onClick={syncCaret}
+        onKeyUp={(e) => {
+          if (!["ArrowUp", "ArrowDown", "Tab", "Enter", "Escape"].includes(e.key)) syncCaret();
+        }}
         onKeyDown={(e) => {
+          const composing = e.isComposing || e.keyCode === 229;
+          if (open && !composing) {
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              const step = e.key === "ArrowDown" ? 1 : -1;
+              setActive((a) => (a + step + suggestions.length) % suggestions.length);
+              return;
+            }
+            if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+              e.preventDefault();
+              accept(suggestions[active]!);
+              return;
+            }
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setDismissed(tokenKey);
+              return;
+            }
+          }
           // Desktop: Enter sends, Shift+Enter breaks the line. A phone keeps Enter for new lines.
           // isComposing / 229: the Enter that commits a Hangul syllable must not send.
-          if (e.key === "Enter" && !e.shiftKey && !COARSE && !e.isComposing && e.keyCode !== 229) {
+          if (e.key === "Enter" && !e.shiftKey && !COARSE && !composing) {
             e.preventDefault();
             void submit();
           }
         }}
       />
-      <button type="submit" class="send-btn" disabled={!text.trim() || sending} aria-label="보내기">
+      <button type="submit" class="send-btn" disabled={!text.trim() || sending} aria-label={t.send}>
         <I.Send />
       </button>
     </form>
@@ -429,14 +595,28 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
 
   useEffect(() => {
     setPending([]);
+    setMine(new Set());
     setTab("chat");
   }, [pane]);
 
-  // A sent message stops being pending once the transcript shows it.
+  // Texts sent from this view: their bubbles get a "received" mark once the conversation shows them.
+  const [mine, setMine] = useState<Set<string>>(new Set());
+
+  // A sent message stops being pending once the queue or the conversation shows it.
   useEffect(() => {
-    const said = new Set(chat.items.filter((i) => i.kind === "user").map((i) => (i as { text: string }).text.trim()));
-    setPending((ps) => ps.filter((p) => !said.has(p.text) && Date.now() - p.at < 120_000));
-  }, [chat.items]);
+    const said = new Set(chat.items.filter((i) => i.kind === "user").map((i) => same((i as { text: string }).text)));
+    const queued = new Set(chat.queue.map(same));
+    setPending((ps) => ps.filter((p) => p.state === "sending" || (!said.has(p.text) && !queued.has(p.text))));
+  }, [chat.items, chat.queue]);
+
+  // Typed but nowhere to be seen after a while: say so instead of claiming it went through.
+  useEffect(() => {
+    if (!pending.some((p) => p.state === "typed")) return;
+    const timer = setInterval(() => {
+      setPending((ps) => ps.map((p) => (p.state === "typed" && Date.now() - p.at > UNCONFIRMED_AFTER_MS ? { ...p, state: "unconfirmed" } : p)));
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [pending]);
 
   useEffect(() => {
     if (!toast) return;
@@ -445,19 +625,20 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
   }, [toast]);
 
   const send = async (text: string): Promise<boolean> => {
-    const p: Pending = { id: Date.now(), text, at: Date.now(), state: "sending" };
+    const p: Pending = { id: Date.now(), text: same(text), at: Date.now(), state: "sending" };
     setPending((ps) => [...ps, p]);
+    setMine((m) => new Set(m).add(p.text));
     try {
       if (agent.status === "blocked") await api.type(pane, text, true);
       else await api.send(pane, text);
-      setPending((ps) => ps.map((x) => (x.id === p.id ? { ...x, state: "sent" } : x)));
+      setPending((ps) => ps.map((x) => (x.id === p.id ? { ...x, state: "typed", at: Date.now() } : x)));
       setTimeout(() => void screen.refresh(), 400);
       return true;
     } catch (e) {
       setPending((ps) => ps.filter((x) => x.id !== p.id));
       setToast(
         e instanceof ApiError && e.code === "agent_blocked"
-          ? "선택지에 먼저 답하세요."
+          ? t.answerFirst
           : e instanceof ApiError
             ? e.message
             : String(e),
@@ -476,7 +657,7 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
     <section class={`chat st-${agent.status}`}>
       <header class="chat-head">
         {!wide && (
-          <a class="icon-btn" href={`#/s/${encodeURIComponent(agent.space)}`} aria-label="목록으로">
+          <a class="icon-btn" href={`#/s/${encodeURIComponent(agent.space)}`} aria-label={t.toList}>
             <I.Back />
           </a>
         )}
@@ -500,15 +681,23 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
 
       <div class="seg" role="tablist">
         <button role="tab" aria-selected={tab === "chat"} onClick={() => setTab("chat")}>
-          대화
+          {t.tabChat}
         </button>
         <button role="tab" aria-selected={tab === "screen"} onClick={() => setTab("screen")}>
-          화면
+          {t.tabScreen}
         </button>
       </div>
 
       {tab === "chat" ? (
-        <Messages rows={rows} failed={chat.failed} pending={pending} state={chat.state} clipped={chat.clipped} />
+        <Messages
+          rows={rows}
+          failed={chat.failed}
+          pending={pending}
+          queue={chat.queue}
+          mine={mine}
+          state={chat.state}
+          clipped={chat.clipped}
+        />
       ) : (
         <ScreenPane text={screen.text} />
       )}
@@ -534,7 +723,7 @@ function ScreenPane({ text }: { text: string }) {
   }, [text]);
   return (
     <pre class="screen" ref={box}>
-      {text || "화면을 읽는 중…"}
+      {text || t.readingScreen}
     </pre>
   );
 }
