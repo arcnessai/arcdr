@@ -1,6 +1,8 @@
 import { render, type ComponentChildren } from "preact";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-import { api, type Health, type Snapshot } from "./api";
+import { api, type Health, type LoadedDisplay, type Snapshot } from "./api";
+import { DisplayContext, DisplayInfo } from "./parts";
+import { DEFAULT_DISPLAY } from "../server/spec";
 import { ChatView } from "./chat";
 import { ConnectView, type Conn } from "./connect";
 import { counts } from "./format";
@@ -117,7 +119,7 @@ function TopBar({
   );
 }
 
-function App() {
+function Screens() {
   const route = useRoute();
   const wide = useMedia("(min-width: 900px)");
   const [conn, setConn] = useState<Conn>("checking");
@@ -315,6 +317,28 @@ function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Hands the display spec (docs/mods.md) to every screen; reread every 30 s so an edited display.json shows up. */
+function App() {
+  const [display, setDisplay] = useState<LoadedDisplay | null>(null);
+  useEffect(() => {
+    const load = () =>
+      void api
+        .display()
+        .then(setDisplay)
+        .catch(() => {});
+    load();
+    const timer = setInterval(load, 30_000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <DisplayInfo.Provider value={display}>
+      <DisplayContext.Provider value={display?.spec ?? DEFAULT_DISPLAY}>
+        <Screens />
+      </DisplayContext.Provider>
+    </DisplayInfo.Provider>
   );
 }
 

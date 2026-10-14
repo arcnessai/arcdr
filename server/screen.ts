@@ -20,7 +20,14 @@ export interface Menu {
 }
 
 const OPTION = /^(\s*)(?:([❯›▶➤>])\s*)?(\d{1,2})[.)]\s+(\S.*)$/;
-const RULE = /^[\s─━═╭╮╰╯┌┐└┘-]{3,}$/;
+/**
+ * A drawn separator. The terminal cuts a line at the pane's width and can split the last wide character,
+ * leaving a replacement character (U+FFFD) at the end, so that is allowed too.
+ */
+function isRule(line: string): boolean {
+  const t = line.trim();
+  return t.length >= 3 && /^[─━═╭╮╰╯┌┐└┘-]+\uFFFD?$/.test(t);
+}
 const CHECKBOX = /^(\[[ xX✔✓]\]|[☐☑☒])\s*/;
 const MAX_LINES_BELOW = 6;
 
@@ -77,9 +84,11 @@ export function parseMenu(screen: string): Menu | null {
       first = i;
       continue;
     }
-    if (line.trim() === "") {
+    // Blank lines, and the rule AskUserQuestion draws before its last option ("Chat about this"),
+    // belong to the menu when an option or an option's detail line sits above them.
+    if (line.trim() === "" || isRule(line)) {
       let j = i - 1;
-      while (j >= 0 && lines[j]!.trim() === "") j--;
+      while (j >= 0 && (lines[j]!.trim() === "" || isRule(lines[j]!))) j--;
       if (j >= 0 && (asOption(lines[j]!, j) || indentOf(lines[j]!) > lowestNumberCol)) continue;
       break;
     }
@@ -112,7 +121,7 @@ export function parseMenu(screen: string): Menu | null {
   for (let i = 0; i < choices.length; i++) if (choices[i]!.n !== choices[0]!.n + i) return null;
   // A live menu is the last thing drawn; below it there is room only for a hint line and the status line.
   // A menu with more output under it was answered earlier and is still on screen.
-  const below = lines.slice(end + 1).filter((l) => l.trim() !== "" && !RULE.test(l)).length;
+  const below = lines.slice(end + 1).filter((l) => l.trim() !== "" && !isRule(l)).length;
   if (below > MAX_LINES_BELOW) return null;
   const cursor = options.findIndex((o) => o.cursor);
   if (cursor < 0) return null;
@@ -120,7 +129,7 @@ export function parseMenu(screen: string): Menu | null {
   const context: string[] = [];
   for (let i = first - 1; i >= 0 && context.length < 10; i--) {
     const line = lines[i]!;
-    if (RULE.test(line)) break;
+    if (isRule(line)) break;
     if (line.trim() === "" && context.length > 0 && context[0] === "") continue;
     context.unshift(line.trim() === "" ? "" : line.trim().slice(0, 240));
   }

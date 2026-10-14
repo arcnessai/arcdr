@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useMemo } from "preact/hooks";
+import { Link, linkify, splitUrls } from "./linkify";
 
 /**
  * A small Markdown subset — fences, headings, lists, quotes, tables, rules, inline code, bold, links —
@@ -115,32 +116,39 @@ export function parseBlocks(src: string): Block[] {
   return blocks;
 }
 
-const INLINE =
-  /(`[^`\n]+`)|(\*\*[^*\n]+?\*\*)|(\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\))|(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'")\]])/g;
+const INLINE = /(`[^`\n]+`)|(\*\*[^*\n]+?\*\*)|(\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\))/g;
+
+/** Inline code that is nothing but an address is a link too: agents print `http://…` that way. */
+function codeSpan(code: string, key: number) {
+  const parts = splitUrls(code);
+  if (parts.length === 1 && parts[0]!.url)
+    return (
+      <Link key={key} href={code}>
+        <code>{code}</code>
+      </Link>
+    );
+  return <code key={key}>{code}</code>;
+}
 
 export function inline(text: string): ComponentChildren[] {
   const out: ComponentChildren[] = [];
   let last = 0;
+  // Plain stretches between marks get their bare addresses linked.
+  const plain = (s: string) => out.push(...linkify(s));
   for (const m of text.matchAll(INLINE)) {
     const at = m.index ?? 0;
-    if (at > last) out.push(text.slice(last, at));
-    if (m[1]) out.push(<code>{m[1].slice(1, -1)}</code>);
-    else if (m[2]) out.push(<strong>{m[2].slice(2, -2)}</strong>);
+    if (at > last) plain(text.slice(last, at));
+    if (m[1]) out.push(codeSpan(m[1].slice(1, -1), at));
+    else if (m[2]) out.push(<strong key={at}>{linkify(m[2].slice(2, -2))}</strong>);
     else if (m[3])
       out.push(
-        <a href={m[5]} target="_blank" rel="noopener noreferrer">
+        <Link key={at} href={m[5]!}>
           {m[4]}
-        </a>,
-      );
-    else if (m[6])
-      out.push(
-        <a href={m[6]} target="_blank" rel="noopener noreferrer">
-          {m[6]}
-        </a>,
+        </Link>,
       );
     last = at + m[0].length;
   }
-  if (last < text.length) out.push(text.slice(last));
+  if (last < text.length) plain(text.slice(last));
   return out;
 }
 

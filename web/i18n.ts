@@ -35,7 +35,7 @@ const en = {
   queued: "Queued — read when the current work ends",
   received: "Received",
   suggestions: "Suggestions",
-  kind: { builtin: "built-in", skill: "skill", command: "command" },
+  kind: { builtin: "built-in", skill: "skill", command: "command", mod: "mod" },
   newMessages: "New messages",
   menuChanged: "The choices changed. Look again.",
   needsAnswer: "Needs your answer",
@@ -69,6 +69,10 @@ const en = {
   newFile: "new",
   unchangedLines: (n: number) => `⋯ ${n} unchanged line${n === 1 ? "" : "s"}`,
   changeClipped: "Too long — only the first part is shown.",
+  notifyCustom: "When a mod's alert rule matches",
+  display: "Display",
+  displayOrigin: { file: "From display.json", herdr: "From herdr's sidebar settings", default: "Default" },
+  displayHelp: "What mods report to herdr, and where arcdr shows it, is set in ~/.config/arcdr/display.json — see docs/mods.md.",
 };
 
 type Strings = typeof en;
@@ -108,7 +112,7 @@ const ko: Strings = {
   queued: "대기 중 — 지금 하던 일이 끝나면 읽습니다",
   received: "받음",
   suggestions: "추천",
-  kind: { builtin: "기본", skill: "스킬", command: "명령" },
+  kind: { builtin: "기본", skill: "스킬", command: "명령", mod: "모드" },
   newMessages: "새 메시지",
   menuChanged: "선택지가 바뀌었습니다. 다시 확인하세요.",
   needsAnswer: "답이 필요합니다",
@@ -142,6 +146,11 @@ const ko: Strings = {
   newFile: "새 파일",
   unchangedLines: (n) => `⋯ 그대로인 줄 ${n}개`,
   changeClipped: "너무 길어서 앞부분만 보입니다.",
+  notifyCustom: "모드가 보낸 값이 알림 규칙에 맞을 때",
+  display: "표시",
+  displayOrigin: { file: "display.json 에서", herdr: "herdr 왼쪽 목록 설정에서", default: "기본값" },
+  displayHelp:
+    "모드가 herdr 에 보낸 값을 arcdr 어디에 어떻게 보일지는 ~/.config/arcdr/display.json 에서 정합니다 — docs/mods.md 참고.",
 };
 
 const ja: Strings = {
@@ -179,7 +188,7 @@ const ja: Strings = {
   queued: "待機中 — 今の作業が終わると読みます",
   received: "受信済み",
   suggestions: "候補",
-  kind: { builtin: "標準", skill: "スキル", command: "コマンド" },
+  kind: { builtin: "標準", skill: "スキル", command: "コマンド", mod: "モッド" },
   newMessages: "新着メッセージ",
   menuChanged: "選択肢が変わりました。もう一度確認してください。",
   needsAnswer: "回答が必要です",
@@ -213,6 +222,11 @@ const ja: Strings = {
   newFile: "新規",
   unchangedLines: (n) => `⋯ 変更のない行 ${n} 行`,
   changeClipped: "長すぎるため先頭だけ表示しています。",
+  notifyCustom: "モッドの値が通知ルールに合ったとき",
+  display: "表示",
+  displayOrigin: { file: "display.json から", herdr: "herdr のサイドバー設定から", default: "既定" },
+  displayHelp:
+    "モッドが herdr に送った値を arcdr のどこにどう出すかは ~/.config/arcdr/display.json で決めます — docs/mods.md を参照。",
 };
 
 const zh: Strings = {
@@ -250,7 +264,7 @@ const zh: Strings = {
   queued: "排队中 — 当前工作结束后读取",
   received: "已收到",
   suggestions: "建议",
-  kind: { builtin: "内置", skill: "技能", command: "命令" },
+  kind: { builtin: "内置", skill: "技能", command: "命令", mod: "模组" },
   newMessages: "新消息",
   menuChanged: "选项已变化，请重新查看。",
   needsAnswer: "需要你回答",
@@ -284,6 +298,10 @@ const zh: Strings = {
   newFile: "新文件",
   unchangedLines: (n) => `⋯ ${n} 行未更改`,
   changeClipped: "内容太长，只显示前面一部分。",
+  notifyCustom: "模组的值符合通知规则时",
+  display: "显示",
+  displayOrigin: { file: "来自 display.json", herdr: "来自 herdr 侧边栏设置", default: "默认" },
+  displayHelp: "模组报告给 herdr 的值在 arcdr 的哪里、怎样显示，由 ~/.config/arcdr/display.json 决定 — 见 docs/mods.md。",
 };
 
 /** Each language under its own name, the way a person looks for theirs in a list. */

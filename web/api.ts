@@ -1,10 +1,11 @@
 import type { Agent, AgentStatus, Snapshot, Space } from "../server/herdr";
 import type { Suggestion } from "../server/complete";
 import type { Menu } from "../server/screen";
+import type { LoadedDisplay } from "../server/spec";
 import type { ChatItem, Chunk } from "../server/transcript";
 import { t } from "./i18n";
 
-export type { Agent, AgentStatus, ChatItem, Menu, Snapshot, Space, Suggestion };
+export type { Agent, AgentStatus, ChatItem, LoadedDisplay, Menu, Snapshot, Space, Suggestion };
 
 export interface Health {
   machine: string;
@@ -73,10 +74,11 @@ export const api = {
   keys: (pane: string, keys: string[]) => post(agentPath(pane, "keys"), { keys }),
   choose: (pane: string, n: number, label: string) => post<ScreenRead>(agentPath(pane, "choose"), { n, label }),
   pushInfo: (endpoint: string) =>
-    request<{ publicKey: string; subscription: { lang: string; blocked: boolean; done: boolean } | null }>(
+    request<{ publicKey: string; subscription: { lang: string; blocked: boolean; done: boolean; custom?: boolean } | null }>(
       `/api/push?endpoint=${encodeURIComponent(endpoint)}`,
     ),
-  pushSave: (sub: PushJSON & { lang: string; blocked: boolean; done: boolean }) => post("/api/push", sub),
+  pushSave: (sub: PushJSON & { lang: string; blocked: boolean; done: boolean; custom: boolean }) => post("/api/push", sub),
   pushRemove: (endpoint: string) => post("/api/push/remove", { endpoint }),
   pushTest: (endpoint: string) => post("/api/push/test", { endpoint }),
+  display: () => request<LoadedDisplay>("/api/display"),
 };

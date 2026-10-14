@@ -29,6 +29,7 @@ const sub = (endpoint: string, prefs: Partial<PushSubscriptionRecord> = {}): Pus
   lang: "ko",
   blocked: true,
   done: false,
+  custom: true,
   ...prefs,
 });
 
@@ -104,5 +105,25 @@ describe("Notifier", () => {
     await Bun.sleep(0);
     expect(store.list().map((s) => s.endpoint.split("/").pop())).toEqual(["flaky"]);
     expect(statSync(join(dir, "b.json")).mode & 0o777).toBe(0o600);
+  });
+});
+
+describe("alerts from mod values", () => {
+  test("ring when a value starts to match, not while it keeps matching, and only for subscribers who want them", async () => {
+    const store = new PushStore(join(dir, "c.json"));
+    store.save(sub("https://fcm.googleapis.com/fcm/send/yes"));
+    store.save(sub("https://fcm.googleapis.com/fcm/send/no", { custom: false }));
+    const bodies: string[] = [];
+    const n = new Notifier(
+      store,
+      async (s, payload) => void bodies.push(`${s.endpoint.split("/").pop()}: ${JSON.parse(payload).body}`),
+      () => [{ from: "token:stage", startsWith: "◇", body: "{name} — {value}" }],
+    );
+    const withStage = (stage: string) => ({ ...agent("w1:p1", "working"), tokens: { stage } });
+    n.observe(snap(withStage("● 작업 중")));
+    n.observe(snap(withStage("◇ 입력 대기")));
+    n.observe(snap(withStage("◇ 입력 대기 · 2분")));
+    await Bun.sleep(0);
+    expect(bodies).toEqual(["yes: build — ◇ 입력 대기"]);
   });
 });

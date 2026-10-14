@@ -2,6 +2,8 @@ import { useEffect, useState } from "preact/hooks";
 import type { Health } from "./api";
 import { t } from "./i18n";
 import { LangPicker } from "./langpicker";
+import { DisplayInfo } from "./parts";
+import { useContext } from "preact/hooks";
 import { readPush, savePrefs, sendTest, turnOff, turnOn, type PushState } from "./push";
 
 function Notifications() {
@@ -32,8 +34,8 @@ function Notifications() {
     }
   };
 
-  const prefs = { blocked: state.blocked, done: state.done };
-  const toggle = (key: "blocked" | "done") => (e: Event) => {
+  const prefs = { blocked: state.blocked, done: state.done, custom: state.custom };
+  const toggle = (key: "blocked" | "done" | "custom") => (e: Event) => {
     const next = { ...prefs, [key]: (e.target as HTMLInputElement).checked };
     setState({ ...state, ...next });
     void run(() => savePrefs(next));
@@ -60,6 +62,10 @@ function Notifications() {
         <input type="checkbox" checked={state.done} disabled={busy} onChange={toggle("done")} />
         {t.notifyDone}
       </label>
+      <label class="check">
+        <input type="checkbox" checked={state.custom} disabled={busy} onChange={toggle("custom")} />
+        {t.notifyCustom}
+      </label>
       <div class="btn-row">
         <button class="btn btn-ghost" disabled={busy} onClick={() => run(sendTest, t.notifyTestSent)}>
           {t.notifyTest}
@@ -73,6 +79,22 @@ function Notifications() {
   );
 }
 
+function DisplaySection() {
+  const info = useContext(DisplayInfo);
+  return (
+    <section class="settings-card">
+      <h2>{t.display}</h2>
+      {info && <p class="settings-line">{t.displayOrigin[info.origin]}</p>}
+      {info?.errors.map((e) => (
+        <p key={e} class="settings-line warn">
+          {e}
+        </p>
+      ))}
+      <p class="settings-line">{t.displayHelp}</p>
+    </section>
+  );
+}
+
 export function SettingsView({ health }: { health: Health | null }) {
   return (
     <div class="settings">
@@ -80,6 +102,7 @@ export function SettingsView({ health }: { health: Health | null }) {
         <h2>{t.notifications}</h2>
         <Notifications />
       </section>
+      <DisplaySection />
       <section class="settings-card">
         <h2>{t.language}</h2>
         <LangPicker />

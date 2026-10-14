@@ -1,7 +1,8 @@
 import type { Agent, AgentStatus, Space } from "./api";
-import { agentName, agentSubtitle, counts, stageTone, STATUS_LABEL, type Counts } from "./format";
+import { counts, STATUS_LABEL, type Counts } from "./format";
 import * as I from "./icons";
 import { t } from "./i18n";
+import { nameOf, PartView, Parts, useDisplay } from "./parts";
 
 export function StatusDot({ status }: { status: AgentStatus }) {
   return (
@@ -9,10 +10,6 @@ export function StatusDot({ status }: { status: AgentStatus }) {
       {status === "done" ? "✓" : status === "blocked" ? "!" : ""}
     </span>
   );
-}
-
-export function Stage({ text }: { text: string }) {
-  return <span class={`stage tone-${stageTone(text)}`}>{text}</span>;
 }
 
 export function Summary({ c, compact = false }: { c: Counts; compact?: boolean }) {
@@ -35,25 +32,31 @@ export function Summary({ c, compact = false }: { c: Counts; compact?: boolean }
   );
 }
 
+/** The short value before the status icon, as the display spec names it (herdr's `$tree`, here by default). */
+export function Badge({ agent }: { agent: Agent }) {
+  const spec = useDisplay();
+  return <span class="tree">{spec.agent.badge && <PartView part={{ as: "badge", ...spec.agent.badge }} of={agent} />}</span>;
+}
+
+/** The line under an agent's name: whatever the display spec puts there, from the values mods report. */
+export function AgentLine({ agent, class: cls }: { agent: Agent; class: string }) {
+  const spec = useDisplay();
+  return <Parts parts={spec.agent.line} of={agent} class={cls} />;
+}
+
 export function AgentRow({ agent, selected }: { agent: Agent; selected: boolean }) {
-  const stage = agent.tokens.stage ?? "";
-  const sub = agentSubtitle(agent);
+  const spec = useDisplay();
   return (
     <a
       class={`agent-row st-${agent.status}${selected ? " selected" : ""}`}
       href={`#/a/${encodeURIComponent(agent.pane)}`}
       aria-current={selected ? "page" : undefined}
     >
-      <span class="tree">{agent.tokens.tree ?? ""}</span>
+      <Badge agent={agent} />
       <StatusDot status={agent.status} />
       <span class="row-main">
-        <span class="row-name">{agentName(agent)}</span>
-        {(stage || sub) && (
-          <span class="row-sub">
-            {stage && <Stage text={stage} />}
-            {sub && <span class="row-conv">{sub}</span>}
-          </span>
-        )}
+        <span class="row-name">{nameOf(spec, agent)}</span>
+        <AgentLine agent={agent} class="row-sub" />
       </span>
       <I.Chevron size={18} class="row-chev" />
     </a>
@@ -73,11 +76,13 @@ export function AgentList({ agents, selected }: { agents: Agent[]; selected: str
 
 export function SpaceCard({ space, agents }: { space: Space; agents: Agent[] }) {
   const c = counts(agents);
+  const spec = useDisplay();
   return (
     <a class={`space-card${c.blocked ? " has-blocked" : ""}`} href={`#/s/${encodeURIComponent(space.id)}`}>
       <span class="space-main">
         <span class="space-name">{space.label}</span>
         <span class="space-meta">{t.agentCount(c.total)}</span>
+        <Parts parts={spec.space.line} of={{ tokens: space.tokens, title: space.label }} class="row-sub" />
         <Summary c={c} />
       </span>
       <I.Chevron size={20} class="row-chev" />

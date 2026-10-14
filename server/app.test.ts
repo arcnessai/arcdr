@@ -41,6 +41,11 @@ function setup() {
     backend,
     machine: "box",
     distDir: "/nonexistent",
+    display: () => ({
+      spec: { agent: {}, space: {}, commands: [{ name: "start-status", detail: "preview the band" }] },
+      origin: "file",
+      errors: [],
+    }),
     gate: (req) =>
       req.headers.get("x-test-login") ? { ok: true, login: "me@example.com" } : { ok: false, status: 403, reason: "no identity" },
     push: {
@@ -105,6 +110,8 @@ describe("routes", () => {
         .status,
     ).toBe(400);
     expect((await post("/api/push", { endpoint: "https://fcm.googleapis.com/fcm/send/x", keys, lang: "xx" })).status).toBe(200);
-    expect(saved).toEqual([{ endpoint: "https://fcm.googleapis.com/fcm/send/x", keys, lang: "en", blocked: true, done: false }]);
+    expect(saved).toEqual([
+      { endpoint: "https://fcm.googleapis.com/fcm/send/x", keys, lang: "en", blocked: true, done: false, custom: true },
+    ]);
   });
 });

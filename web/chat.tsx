@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import { api, ApiError, type Agent, type ChatItem, type Menu, type Suggestion } from "./api";
-import { agentName, agentSubtitle, STATUS_LABEL } from "./format";
+import { STATUS_LABEL } from "./format";
 import * as I from "./icons";
-import { Stage, StatusDot } from "./lists";
+import { AgentLine, Badge, StatusDot } from "./lists";
+import { nameOf, PartRow, useDisplay } from "./parts";
 import { ChangeDiff, ChangesTab, changeStats, Stats } from "./changes";
+import { Linked } from "./linkify";
 import { Markdown } from "./markdown";
 import { tokenAt, type Token } from "./token";
 import { t } from "./i18n";
@@ -219,7 +221,15 @@ function ToolGroup({ tools, failed }: { tools: Tool[]; failed: Set<string> }) {
                 {x.change && <Stats {...changeStats(x.change)} />}
               </button>
               {detail === x.id &&
-                (x.change ? <ChangeDiff change={x.change} /> : x.detail && <pre class="tool-detail">{x.detail}</pre>)}
+                (x.change ? (
+                  <ChangeDiff change={x.change} />
+                ) : (
+                  x.detail && (
+                    <pre class="tool-detail">
+                      <Linked text={x.detail} />
+                    </pre>
+                  )
+                ))}
             </li>
           ))}
         </ul>
@@ -228,12 +238,24 @@ function ToolGroup({ tools, failed }: { tools: Tool[]; failed: Set<string> }) {
   );
 }
 
-function Message({ item, latest, mine }: { item: Shown; latest: boolean; mine: boolean }) {
+function Message({
+  item,
+  latest,
+  mine,
+  answering,
+}: {
+  item: Shown;
+  latest: boolean;
+  mine: boolean;
+  answering: Answering | null;
+}) {
   switch (item.kind) {
     case "user":
       return (
         <div class="msg msg-user">
-          <div class="bubble">{item.text}</div>
+          <div class="bubble">
+            <Linked text={item.text} />
+          </div>
           {mine && <span class="pending-state is-received">✓ {t.received}</span>}
         </div>
       );
@@ -248,18 +270,36 @@ function Message({ item, latest, mine }: { item: Shown; latest: boolean; mine: b
         <div class="msg ask-card">
           {item.questions.map((q, i) => (
             <div key={i} class="ask-q">
-              <p class="ask-title">{q.question}</p>
+              <p class="ask-title">
+                <Linked text={q.question} />
+              </p>
               <ol class="ask-options">
-                {q.options.map((o, j) => (
-                  <li key={j}>{o}</li>
-                ))}
+                {q.options.map((o, j) => {
+                  // The question still open on screen: its options answer it from here.
+                  const choice = answering && choiceFor(answering.menu, o);
+                  return (
+                    <li key={j}>
+                      {choice ? (
+                        <button
+                          class={`ask-choice${answering.busy === choice.n ? " is-busy" : ""}`}
+                          disabled={answering.busy !== null}
+                          onClick={() => answering.choose(choice.n, choice.label)}
+                        >
+                          {o}
+                        </button>
+                      ) : (
+                        <Linked text={o} />
+                      )}
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           ))}
         </div>
       );
     case "note":
-      return <div class="msg msg-note">{item.code === "compacted" ? t.compacted : item.text}</div>;
+      return <div class="msg msg-note">{item.code === "compacted" ? t.compacted : <Linked text={item.text} />}</div>;
     case "tool":
       return null;
   }
@@ -273,6 +313,7 @@ function Messages(props: {
   mine: Set<string>;
   state: string;
   clipped: boolean;
+  answering: Answering | null;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -293,7 +334,11 @@ function Messages(props: {
 
   // The newest answer is what the person came to read, so it is never folded.
   let lastAssistant: string | null = null;
-  for (const r of props.rows) if (r.kind === "item" && r.item.kind === "assistant") lastAssistant = r.item.id;
+  let lastAsk: string | null = null;
+  for (const r of props.rows) {
+    if (r.kind === "item" && r.item.kind === "assistant") lastAssistant = r.item.id;
+    if (r.kind === "item" && r.item.kind === "ask") lastAsk = r.item.id;
+  }
 
   const toBottom = () => {
     const el = box.current!;
@@ -317,18 +362,23 @@ function Messages(props: {
               item={r.item}
               latest={r.item.id === lastAssistant}
               mine={r.item.kind === "user" && props.mine.has(same(r.item.text))}
+              answering={r.item.id === lastAsk ? props.answering : null}
             />
           ),
         )}
         {props.queue.map((text, i) => (
           <div key={`q${i}`} class="msg msg-user pending is-queued">
-            <div class="bubble">{text}</div>
+            <div class="bubble">
+              <Linked text={text} />
+            </div>
             <span class="pending-state">{t.queued}</span>
           </div>
         ))}
         {props.pending.map((p) => (
           <div key={p.id} class={`msg msg-user pending is-${p.state}`}>
-            <div class="bubble">{p.text}</div>
+            <div class="bubble">
+              <Linked text={p.text} />
+            </div>
             <span class="pending-state">{t.pending[p.state]}</span>
           </div>
         ))}
@@ -342,26 +392,24 @@ function Messages(props: {
   );
 }
 
-function MenuPanel(props: {
-  pane: string;
+/** What answering a menu needs: the menu as last read, which option is being sent, and how to send one. */
+interface Answering {
   menu: Menu;
-  onResult: (r: { text: string; menu: Menu | null }) => void;
-  onError: (m: string) => void;
-}) {
-  const [busy, setBusy] = useState<number | null>(null);
-  const choose = async (n: number, label: string) => {
-    setBusy(n);
-    navigator.vibrate?.(10);
-    try {
-      props.onResult(await api.choose(props.pane, n, label));
-    } catch (e) {
-      props.onError(
-        e instanceof ApiError && e.code === "changed" ? t.menuChanged : e instanceof ApiError ? e.message : String(e),
-      );
-    } finally {
-      setBusy(null);
-    }
-  };
+  busy: number | null;
+  choose: (n: number, label: string) => void;
+}
+
+/** The menu option an AskUserQuestion option names; the screen may show it cut, or with "(Recommended)" after it. */
+export function choiceFor(menu: Menu, label: string) {
+  const bare = (s: string) => s.replace(/…$/, "").trim();
+  return (
+    menu.choices.find((c) => c.label === label) ??
+    menu.choices.find((c) => c.label.startsWith(label) || label.startsWith(bare(c.label)))
+  );
+}
+
+function MenuPanel(props: Answering) {
+  const { busy, choose } = props;
   const { menu } = props;
   // The line right above the options is the question itself; what comes before it (the command,
   // the file) is detail, shown scrolled to its end.
@@ -378,7 +426,7 @@ function MenuPanel(props: {
       </p>
       {detail && (
         <pre class="menu-context" ref={detailBox}>
-          {detail}
+          <Linked text={detail} />
         </pre>
       )}
       {question && <p class="menu-question">{question}</p>}
@@ -674,11 +722,23 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
     }
   };
 
-  const stage = agent.tokens.stage ?? "";
-  const sub = agentSubtitle(agent);
+  const spec = useDisplay();
   // herdr marks an agent blocked when it recognises an approval or question UI; a menu-shaped
   // screen without that is old output, so no buttons for it.
   const showMenu = screen.menu !== null && agent.status === "blocked";
+  const [busy, setBusy] = useState<number | null>(null);
+  const choose = async (n: number, label: string) => {
+    setBusy(n);
+    navigator.vibrate?.(10);
+    try {
+      screen.apply(await api.choose(pane, n, label));
+    } catch (e) {
+      setToast(e instanceof ApiError && e.code === "changed" ? t.menuChanged : e instanceof ApiError ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+  const answering: Answering | null = showMenu ? { menu: screen.menu!, busy, choose } : null;
 
   return (
     <section class={`chat st-${agent.status}`}>
@@ -690,15 +750,10 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
         )}
         <div class="chat-title">
           <p class="chat-name">
-            {agent.tokens.tree && <span class="tree">{agent.tokens.tree}</span>}
-            <span class="ellipsis">{agentName(agent)}</span>
+            <Badge agent={agent} />
+            <span class="ellipsis">{nameOf(spec, agent)}</span>
           </p>
-          {(stage || sub) && (
-            <p class="chat-sub">
-              {stage && <Stage text={stage} />}
-              {sub && <span class="ellipsis">{sub}</span>}
-            </p>
-          )}
+          <AgentLine agent={agent} class="chat-sub" />
         </div>
         <span class={`status-pill st-${agent.status}`}>
           <StatusDot status={agent.status} />
@@ -728,6 +783,7 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
           mine={mine}
           state={chat.state}
           clipped={chat.clipped}
+          answering={answering}
         />
       ) : tab === "changes" ? (
         <div class="messages">
@@ -743,9 +799,13 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
             {toast}
           </p>
         )}
-        {showMenu && <MenuPanel pane={pane} menu={screen.menu!} onResult={screen.apply} onError={setToast} />}
+        {spec.band?.map((row, i) => (
+          <PartRow key={i} row={row} of={agent} />
+        ))}
+        {answering && <MenuPanel {...answering} />}
         {(keysOpen || tab === "screen") && <KeyBar pane={pane} onError={setToast} />}
         <Composer agent={agent} onSend={send} keysOpen={keysOpen} onKeys={() => setKeysOpen(!keysOpen)} />
+        {spec.footer && <PartRow row={spec.footer} of={agent} />}
       </div>
     </section>
   );
@@ -758,7 +818,7 @@ function ScreenPane({ text }: { text: string }) {
   }, [text]);
   return (
     <pre class="screen" ref={box}>
-      {text || t.readingScreen}
+      {text ? <Linked text={text} /> : t.readingScreen}
     </pre>
   );
 }

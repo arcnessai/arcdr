@@ -5,6 +5,7 @@ import { completeFile, filterSlash, slashCommands } from "./complete";
 import { loadConfig } from "./config";
 import { prompt, readScreen, sendInput, sendKeys } from "./herdr";
 import { SnapshotHub } from "./hub";
+import { displayLoader } from "./display";
 import { loadVapid, notification, Notifier, PushStore, webPushDeliver } from "./push";
 import { findTranscript, readFrom, readTail } from "./transcript";
 
@@ -37,7 +38,9 @@ const herdrBackend: Backend = {
 const vapid = loadVapid(join(cfg.configDir, "vapid.json"));
 const pushStore = new PushStore(join(cfg.configDir, "push.json"));
 const deliver = webPushDeliver(vapid, `https://${cfg.publicHosts[0] ?? "localhost"}`);
-const notifier = new Notifier(pushStore, deliver);
+// What to show besides the conversation: ~/.config/arcdr/display.json, else herdr's own sidebar rows.
+const display = displayLoader(join(cfg.configDir, "display.json"), join(home, ".config/herdr/config.toml"));
+const notifier = new Notifier(pushStore, deliver, () => display().spec.alerts ?? []);
 hub.subscribe((event, data) => {
   if (event === "snapshot") notifier.observe(JSON.parse(data));
 });
@@ -47,6 +50,7 @@ const handle = createApp({
   machine: cfg.machine,
   distDir: cfg.distDir,
   gate: (req, remote) => judge({ method: req.method, remote, headers: req.headers }, cfg),
+  display,
   push: {
     publicKey: vapid.publicKey,
     get: (endpoint) => pushStore.get(endpoint),

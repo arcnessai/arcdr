@@ -11,7 +11,7 @@ export interface Suggestion {
   value: string;
   /** One line about it; empty for files. */
   detail: string;
-  kind: "builtin" | "skill" | "command" | "dir" | "file";
+  kind: "builtin" | "skill" | "command" | "mod" | "dir" | "file";
 }
 
 /**

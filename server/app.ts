@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Verdict } from "./access";
-import type { Suggestion } from "./complete";
+import { filterSlash, type Suggestion } from "./complete";
+import type { LoadedDisplay } from "./spec";
 import { validEndpoint, type PushSubscriptionRecord } from "./push";
 import { HerdrError, type Agent, type Snapshot } from "./herdr";
 import { keysToChoose, parseMenu } from "./screen";
@@ -32,6 +33,8 @@ export interface AppOptions {
   gate: (req: Request, remote: string | null) => Verdict;
   /** Web Push, when this server sends notifications; without it the push routes answer 404. */
   push?: PushApi;
+  /** What to show besides the conversation, and from which values (docs/mods.md). */
+  display: () => LoadedDisplay;
 }
 
 export interface PushApi {
@@ -135,7 +138,7 @@ function trimScreen(text: string): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function createApp({ backend, machine, distDir, gate, push }: AppOptions) {
+export function createApp({ backend, machine, distDir, gate, push, display }: AppOptions) {
   function events(req: Request): Response {
     let close = () => {};
     const stream = new ReadableStream<Uint8Array>({
@@ -176,7 +179,7 @@ export function createApp({ backend, machine, distDir, gate, push }: AppOptions)
       const sub = push.get(url.searchParams.get("endpoint") ?? "");
       return json(200, {
         publicKey: push.publicKey,
-        subscription: sub && { lang: sub.lang, blocked: sub.blocked, done: sub.done },
+        subscription: sub && { lang: sub.lang, blocked: sub.blocked, done: sub.done, custom: sub.custom ?? true },
       });
     }
     if (req.method !== "POST") throw new HttpError(405, "method", "method not allowed");
@@ -191,7 +194,14 @@ export function createApp({ backend, machine, distDir, gate, push }: AppOptions)
       const auth = typeof keys.auth === "string" ? keys.auth : "";
       if (!PUSH_KEY.test(p256dh) || !PUSH_KEY.test(auth)) throw new HttpError(400, "bad_keys", "malformed subscription keys");
       const lang = typeof b.lang === "string" && LANGS.has(b.lang) ? b.lang : "en";
-      push.save({ endpoint, keys: { p256dh, auth }, lang, blocked: b.blocked !== false, done: b.done === true });
+      push.save({
+        endpoint,
+        keys: { p256dh, auth },
+        lang,
+        blocked: b.blocked !== false,
+        done: b.done === true,
+        custom: b.custom !== false,
+      });
       return json(200, { ok: true });
     }
     if (path === "/api/push/remove") {
@@ -222,6 +232,7 @@ export function createApp({ backend, machine, distDir, gate, push }: AppOptions)
     }
     if (path === "/api/events" && req.method === "GET") return events(req);
     if (path === "/api/push" || path.startsWith("/api/push/")) return pushRoute(req, url, path);
+    if (path === "/api/display" && req.method === "GET") return json(200, display());
 
     const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose)$/.exec(path);
     if (!m) throw new HttpError(404, "not_found", "no such route");
@@ -242,7 +253,15 @@ export function createApp({ backend, machine, distDir, gate, push }: AppOptions)
 
     if (action === "complete" && req.method === "GET") {
       const q = (url.searchParams.get("q") ?? "").slice(0, 300);
-      return json(200, { items: backend.complete(agent, url.searchParams.get("kind") === "file" ? "file" : "slash", q) });
+      const kind = url.searchParams.get("kind") === "file" ? "file" : "slash";
+      const found = backend.complete(agent, kind, q);
+      if (kind === "file") return json(200, { items: found });
+      // Commands a mod registers live in its code, not on disk; the display spec can name them.
+      const fromMods = filterSlash(
+        (display().spec.commands ?? []).map((c): Suggestion => ({ value: `/${c.name}`, detail: c.detail ?? "", kind: "mod" })),
+        q,
+      );
+      return json(200, { items: [...fromMods, ...found.filter((s) => !fromMods.some((m) => m.value === s.value))] });
     }
 
     if (action === "screen" && req.method === "GET") {
