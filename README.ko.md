@@ -4,13 +4,14 @@
 
 # arcdr
 
-**주머니 속 herdr.** 내 컴퓨터의 herdr 에서 도는 Claude Code 세션을 모두 보고, 묻는 말에 답하고, 일을 이어 가게
-한다 — 폰이나 다른 컴퓨터에서, 내 Tailscale 네트워크로.
+**내 herdr 를 폰으로, 모드까지 그대로.**<br/>
+herdr 에서 돌아가는 Claude Code 세션을 herdr 에서 보던 모습 그대로, 모드가 보내는 정보까지 함께 보여 줘요.
+폰이나 다른 컴퓨터에서 질문에 답하고 일을 이어 가세요. 연결은 내 Tailscale 네트워크 안에서만 해요.
 
-[![herdr](https://img.shields.io/badge/herdr-0.9%2B-8be9fd?style=flat-square)](https://herdr.dev)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-sessions-bd93f9?style=flat-square)](https://code.claude.com)
+[![herdr](https://img.shields.io/badge/herdr-native-8be9fd?style=flat-square)](https://herdr.dev)
+[![Claude Code mods](https://img.shields.io/badge/Claude%20Code-mods%20welcome-bd93f9?style=flat-square)](docs/mods.ko.md)
 [![Tailscale](https://img.shields.io/badge/Tailscale-tailnet%20only-5b97e8?style=flat-square)](https://tailscale.com)
-[![PWA](https://img.shields.io/badge/PWA-installable-ff79c6?style=flat-square)](#폰에-설치하기)
+[![PWA](https://img.shields.io/badge/PWA-installable-ff79c6?style=flat-square)](#폰에서)
 [![Bun](https://img.shields.io/badge/Bun-1.4-f2a65e?style=flat-square)](https://bun.sh)
 [![License: MIT](https://img.shields.io/badge/license-MIT-50fa7b?style=flat-square)](LICENSE)
 
@@ -22,90 +23,137 @@
 
 ---
 
-## 왜 arcdr 인가
+## 말 한마디로 시작하기
 
-herdr 에 Claude Code 세션을 열 개 넘게 띄워 두고 자리를 비운다. 그중 하나가 「재시도 정책은 어느 쪽으로?」 하고
-묻고는 한 시간을 기다린다.
+herdr 가 도는 컴퓨터에서 아무 데서나 Claude Code 를 열고 이렇게 말하면 돼요.
 
-- 📱 **한 화면에 전부.** 목록은 herdr 왼쪽 목록과 같은 모양이다 — 번호, 상태, 단계. 나를 기다리는 세션은 분홍으로
-  바뀌고 폰이 울린다.
-- 👆 **눌러서 답하기.** 권한 확인, 선택 질문, 계획 승인, 폴더 신뢰 확인이 버튼이 된다. 키를 보내기 직전에 화면을
-  다시 읽어서, 그새 바뀐 메뉴에 엉뚱한 답이 들어가지 않는다.
-- 🔐 **새로 로그인할 것이 없다.** 세션마다 이미 쓰던 Claude 계정 그대로 돈다. arcdr 은 내 Tailscale 신원만 본다.
-  계정을 여럿 바꿔 쓰는 수고가 사라진다.
-- 🧩 **내 모드가 폰에도.** Claude Code 모드가 herdr 에 보내는 값 — 단계, 진행 점, 쓴 컨텍스트, 사용 한도 — 을 내가
-  정한 자리에 정한 모양으로 그린다. [방법 →](docs/mods.ko.md)
-- 🪶 **가볍다.** Bun 서버 하나, Preact 화면 하나, 실행 의존성 둘(Preact, `web-push`). herdr 소켓과 Claude Code
-  대화 기록을 읽기만 하고, 어느 쪽에도 아무것도 깔지 않는다.
+> **https://github.com/arcnessai/arcdr 셋팅해줘**
 
-## 할 수 있는 것
+이미 받아 둔 폴더가 있으면 그 폴더에서 「셋팅해줘」라고만 해도 돼요.
+
+[`arcdr-setup`](.claude/skills/arcdr-setup/SKILL.md) 스킬이 저장소를 받고, 빠진 걸 설치하고, 서비스를 띄워요. 직접
+열어야 하는 링크 두 개(Tailscale 로그인, HTTPS 켜기)는 따로 건네주고, 내가 정해야 하는 일은 먼저 물어봐요. 마지막에는
+기본 모드도 설치할지 물어봐요. 설치하면 처음부터 대화 말고도 세션이 지금 뭘 하는지까지 폰에서 볼 수 있어요.
+
+<a id="폰에서"></a>
+**폰에서는:** 같은 계정으로 Tailscale 앱을 켜고 → Chrome 으로 `https://<기기>.<tailnet>.ts.net` 을 열고 →
+**앱 설치** 를 누르세요. 다른 컴퓨터는 Tailscale 을 켜고 같은 주소를 열면 돼요.
+
+## herdr 와 모드를 중심에 두고 만들었어요
+
+Claude Code 를 원격으로 보는 도구는 대부분 대화 하나를 보여 줘요. arcdr 은 **내 작업 공간 전체**를 보여 줘요.
+herdr 가 정리해 둔 그대로, 모드가 붙여 둔 정보까지요.
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### herdr 그대로
+
+- **목록이 곧 herdr 사이드바예요.** herdr 설정의 `rows_by_agent` 를 그대로 읽어서 번호도, 단계 색도, 순서도
+  같아요. 따로 설정할 게 없어요.
+- **스페이스와 탭도 herdr 그대로예요.** 폰에서 새 herdr 탭에 세션을 열고, 지난 대화를 이어 가고, 닫을 수 있어요.
+- **상태는 herdr 가 알아낸 그대로예요.** 나를 기다리는 세션은 분홍색으로 바뀌고 폰이 울려요.
+- **Claude 계정이 여럿이어도 괜찮아요.** 칸마다 쓰던 계정 그대로 돌고, arcdr 은 내 Tailscale 계정만 확인해요.
+
+</td>
+<td width="50%" valign="top">
+
+### 모드도 폰에서
+
+| 터미널에서 모드가 그리던 것 | arcdr 에서 보이는 자리 |
+|---|---|
+| herdr 사이드바 줄의 토큰 | 에이전트 이름 앞이나 아래 |
+| 입력칸 위 띠 | 메시지 입력칸 위 |
+| 입력칸 아랫줄 | 메시지 입력칸 아래 |
+| 안내 메시지 | 폰 알림 |
+| 모드가 등록한 커맨드 | `/` 추천 목록 |
+
+같은 값을, 내가 정해 둔 자리에, 같은 모양으로 보여 줘요.
+
+</td>
+</tr>
+</table>
+
+### 폰에 띄우는 네 가지 방법
+
+| | |
+|---|---|
+| 🧩 **기본 모드** | `scripts/setup.sh mod` 로 [`arcdr-report`](mods/arcdr-report/README.md) 를 설치해요. 그다음부터는 세션마다 지금 쓰는 도구(`Edit rank.ts`), 일한 지 얼마나 됐는지, 할 일 목록(`●●●○○ 3/5`), 쓴 컨텍스트, 브랜치, 비용, 사용 한도가 보여요. 코드는 한 줄도 안 써도 돼요. |
+| 💬 **말로 부탁하기** | 이 저장소에서 Claude Code 에게 「폰에 git 브랜치 보여 줘」, 「테스트 깨지면 폰으로 알려 줘」라고 말해요. [`arcdr-mod`](.claude/skills/arcdr-mod/SKILL.md) 스킬이 값을 보낼 훅이나 모드를 찾거나 만들고, 화면에 자리를 잡고, 제대로 보이는지까지 확인해요. |
+| 🎨 **눌러서 꾸미기** | **설정 → 표시 → 표시 꾸미기** 에 모드가 보내는 값이 전부 나와요. 자리와 모양(칩, 점, 막대, 「4분 전」)을 고르면 미리 보기에 바로 반영돼요. |
+| 🔔 **폰 울리기** | 모드든 훅이든 스크립트든 `herdr pane report-metadata "$HERDR_PANE_ID" --token notify="배포 끝"` 한 줄이면 폰 알림으로 와요. |
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/phone-display.png" alt="표시 꾸미기: 값의 자리, 모양, 색을 고르고 바로 미리 보기" /></td>
+<td width="50%"><img src="docs/images/phone-arcness.png" alt="모드가 보낸 띠와 아랫줄이 보이는 대화 화면" /></td>
+</tr>
+<tr>
+<td><b>폰에서 바로 꾸미기</b><br/>모드가 보내는 값마다 자리와 모양을 고르면 바로 미리 보여 줘요.</td>
+<td><b>터미널 밖으로 나온 띠</b><br/>모드가 Claude Code 입력칸 위에 그리던 띠가 메시지 입력칸 위에 그대로 나와요.</td>
+</tr>
+</table>
+
+형식 전체와 자리, 실제 예시는 **[docs/mods.ko.md](docs/mods.ko.md)** 에 있어요.
+
+## 그 밖에 할 수 있는 것
 
 <table>
 <tr>
 <td width="33%"><img src="docs/images/phone-agents.png" alt="에이전트 목록" /></td>
 <td width="33%"><img src="docs/images/phone-question.png" alt="선택지가 있는 질문" /></td>
-<td width="33%"><img src="docs/images/phone-changes.png" alt="파일 변경 비교" /></td>
+<td width="33%"><img src="docs/images/phone-tray.png" alt="＋ 판: 키 버튼, 사진·파일, 카메라, 등록한 커맨드" /></td>
 </tr>
 <tr>
-<td><b>모든 세션을 한눈에</b><br/>spaces, 에이전트, 상태, 모드가 보낸 단계.</td>
-<td><b>답하고 보내기</b><br/>선택지는 버튼, 한글 입력이 깨지지 않는 입력칸, <code>/</code> · <code>@</code> 자동완성, 붙여넣기로 이미지.</td>
-<td><b>무엇이 바뀌었나</b><br/>고친 내용마다 줄 비교, 대화가 건드린 파일 전부, 파일 보기.</td>
+<td><b>모든 세션을 한눈에</b><br/>스페이스, 에이전트, 상태, 모드가 보낸 단계까지.</td>
+<td><b>눌러서 답하기</b><br/>권한 확인, 질문, 계획 승인, 폴더 신뢰 확인이 버튼으로 나와요. 키를 보내기 직전에 화면을 한 번 더 읽어서, 그사이 메뉴가 바뀌었으면 보내지 않아요.</td>
+<td><b>나머지는 ＋ 하나로</b><br/>키 버튼, 사진이나 카메라, 자주 쓰는 스킬과 커맨드까지 한 번에.</td>
 </tr>
 </table>
 
 <details>
-<summary><b>그 밖의 기능</b></summary>
+<summary><b>기능 전체 보기</b></summary>
 
 | | |
 |---|---|
-| **대화** | 채팅 모양: 마크다운 · 표 · 코드, 도구 호출은 한 줄로 접기, 링크는 새 창 |
-| **보내기** | 보내는 중 → 입력됨 → 대기 중(에이전트가 일하는 동안) → 받음, 대기 메시지 지금 보내기, 세션별 쓰다 만 글 보관 |
-| **키** | Esc, 화살표, Tab, ⇧Tab, Enter — Ctrl+C 는 일부러 뺐다(두 번이면 Claude Code 가 꺼진다) |
-| **화면** | 지금 터미널 그대로, 폰 폭에 맞춰 줄바꿈 |
-| **세션 안** | 권한 모드 · 모델 칩, 중단, `/compact`, `/context`, `/usage`, 되돌리기, `/clear` |
-| **세션 관리** | 어느 폴더에서든 새로 열기(첫 메시지와 함께), 지난 대화 이어 하기, 닫기 |
-| **＋ 판** | 키 버튼, 사진·파일, 폰에서는 카메라, 등록한 커맨드 — 입력칸 왼쪽 버튼 하나에 |
-| **커맨드** | 자주 쓰는 스킬·커맨드를 서버에 등록해 폰과 PC 가 같은 목록을 씀 — 누르면 입력칸에 넣거나 바로 보냄 |
-| **첨부** | ＋ → 사진·파일, 스크린샷 붙여넣기, 끌어다 놓기 — 에이전트가 읽는 곳에 저장해 `@경로` 로 |
-| **알림** | 에이전트가 답을 기다리거나 일을 끝내면 웹 푸시 — 모드 값이 내 규칙에 맞을 때도 |
-| **모양** | 폰 · PC 배치, 테마: 자동 · Dracula · 밝게 · Arcness · Arcness 밝게 · Nord, 언어: English · 한국어 · 日本語 · 简体中文 |
+| **대화** | 채팅처럼 보여 줘요. 마크다운, 표, 코드를 그리고, 도구 호출은 한 줄로 접고, 링크는 새 창에서 열려요 |
+| **보내기** | 보내는 중 → 입력함 → 대기 중(에이전트가 일하는 동안) → 받음 순서로 보여 줘요. 대기 중인 메시지를 바로 보낼 수 있고, 쓰다 만 글은 세션마다 남겨 둬요. 한글 입력도 깨지지 않아요 |
+| **자동완성** | `/` 를 치면 기본 커맨드, 스킬, 모드 커맨드가, `@` 를 치면 파일이 나와요 |
+| **커맨드** | 자주 쓰는 스킬·커맨드를 등록해 두면 폰과 PC 에서 같은 목록을 써요. 누르면 입력칸에 넣거나 바로 보내요 |
+| **첨부** | ＋ → 사진·파일(폰은 카메라도), 스크린샷 붙여넣기, 끌어다 놓기. 에이전트가 읽을 수 있는 곳에 저장하고 `@경로` 로 넣어 줘요 |
+| **변경** | 고친 내용을 줄 단위 비교로, 대화가 건드린 파일 전부를, 파일 내용까지 볼 수 있어요 |
+| **키** | Esc, 화살표, Tab, ⇧Tab, Enter. Ctrl+C 는 일부러 뺐어요(두 번 누르면 Claude Code 가 꺼져요) |
+| **화면** | 지금 터미널 화면을 폰 폭에 맞춰 보여 줘요 |
+| **세션 안에서** | 권한 모드·모델 칩, 멈추기, `/compact`, `/context`, `/usage`, 되감기, `/clear` |
+| **세션 관리** | 아무 폴더에서나 새로 열고(첫 메시지도 같이), 지난 대화를 이어 가고, 닫을 수 있어요 |
+| **알림** | 에이전트가 답을 기다리거나 일을 마쳤을 때, 모드가 `notify` 를 보냈을 때, 값이 내 규칙에 맞을 때 웹 푸시로 와요 |
+| **모양** | 폰과 PC 화면 배치, 테마(자동 · Dracula · 밝게 · Arcness · Arcness 밝게 · Nord), 언어(English · 한국어 · 日本語 · 简体中文) |
 
 </details>
 
 <p align="center">
-<img src="docs/images/desktop-light.png" width="80%" alt="PC 에서 Arcness 밝게 테마" />
+<img src="docs/images/desktop-light.png" width="80%" alt="PC 에서 본 arcdr, Arcness 밝게 테마" />
 </p>
 
-## 빠른 시작
+## 직접 설치하기
 
-systemd 가 도는 Linux 나 WSL 에서 [herdr](https://herdr.dev) 로 Claude Code 를 쓰고 있으면 된다.
-
-**Claude Code 로** — 이 저장소를 열고 「arcdr 설치해줘」라고 한다. [`arcdr-setup`](.claude/skills/arcdr-setup/SKILL.md)
-스킬이 아래 스크립트를 돌리고, 사람만 열 수 있는 주소 둘을 건네고, 사람이 정할 일은 먼저 묻는다.
-
-**직접:**
+systemd 가 도는 Linux 나 WSL 에서 [herdr](https://herdr.dev) 로 Claude Code 를 쓰고 있으면 돼요.
 
 ```bash
 git clone https://github.com/arcnessai/arcdr && cd arcdr
-scripts/setup.sh status   # 무엇이 됐고 무엇이 남았는지
-scripts/setup.sh all      # 남은 단계를 차례로 — 주소를 열어야 할 때는 종료 코드 10 으로 멈춘다
+scripts/setup.sh status   # 뭐가 됐고 뭐가 남았는지
+scripts/setup.sh all      # 남은 단계를 차례로. 링크를 직접 열어야 할 때는 종료 코드 10 으로 멈춰요
+scripts/setup.sh mod      # 원하면: 기본 모드
 ```
 
-herdr 를 확인하고, Tailscale 을 깔고 로그인하고, tailnet HTTPS 를 켜고, Bun 을 체크섬을 맞춰 깔고, 시험과 빌드를
-돌리고, `~/.config/arcdr/env` 를 쓰고, systemd 사용자 서비스로 띄워 `tailscale serve` 로 연다.
+herdr 를 확인하고, Tailscale 을 설치해 로그인하고, tailnet HTTPS 를 켜고, Bun 을 체크섬까지 확인해 설치하고,
+시험과 빌드를 돌리고, `~/.config/arcdr/env` 를 만들고, systemd 사용자 서비스로 띄운 다음 `tailscale serve` 로
+열어 줘요.
 
-### 폰에 설치하기
+**구경만 해 보려면:** `bun install && bun run demo` — herdr 없이 가짜 에이전트로 http://127.0.0.1:7430 에서 볼 수 있어요.
 
-같은 계정으로 Tailscale 앱을 켜고, Chrome 으로 `https://<기기>.<tailnet>.ts.net` 을 열어 **앱 설치** 를 누른다.
-다른 컴퓨터는 Tailscale 을 켜고 같은 주소를 연다.
-
-### 구경만 하기
-
-```bash
-bun install && bun run demo   # 가짜 에이전트로 http://127.0.0.1:7430 — herdr 없이
-```
-
-## 동작 구조
+## 어떻게 동작하나요
 
 ```mermaid
 flowchart LR
@@ -114,84 +162,78 @@ flowchart LR
   server -- "소켓: session.snapshot · pane.read<br/>agent.prompt · pane.send_keys" --> herdr["herdr"]
   herdr --> panes["Claude Code 세션들"]
   server -- "읽기" --> logs[("~/.claude/projects<br/>대화 기록")]
-  mods["내 모드 · 훅"] -- "report-metadata" --> herdr
+  mods["내 모드 · 훅 · 스크립트"] -- "report-metadata" --> herdr
 ```
 
-화면이 열려 있는 동안(그리고 알림을 위해) 서버는 1초마다 herdr 상태를 받아 바뀐 것만 화면에 흘려보낸다. 대화
-기록은 지난번에 읽은 곳부터 이어 읽고, 터미널에 메뉴가 떠 있으면 선택지로 바꾼다.
+화면이 열려 있는 동안(그리고 알림을 위해) 서버는 1초마다 herdr 상태를 받아서 바뀐 것만 화면에 보내요. 대화
+기록은 지난번에 읽은 데서부터 이어 읽고, 터미널에 메뉴가 떠 있으면 선택지 버튼으로 바꿔요. 모드가 보낸 값을
+어디에 그릴지는 `display.json` 이 정해요. arcdr 은 herdr 나 Claude Code 에 아무것도 설치하지 않아요. 기본 모드는
+원할 때만 넣으면 돼요.
 
 ## 보안
 
-들어온 사람은 에이전트 터미널에 글을 칠 수 있고, 그 터미널은 내 사용자 권한으로 돈다. 그래서 입구를 하나만, 좁게 연다.
+arcdr 에 들어온 사람은 에이전트 터미널에 글을 칠 수 있고, 그 터미널은 내 사용자 권한으로 돌아요. 그래서 들어오는
+길을 하나만, 좁게 열어 뒀어요.
 
 <details>
-<summary><b>하나씩</b></summary>
+<summary><b>하나씩 보기</b></summary>
 
-- **루프백에만.** 서버는 `127.0.0.2` 에 뜬다. WSL 은 `127.0.0.1` 에 뜬 것을 Windows 로 넘기지만 `127.0.0.2` 는
-  넘기지 않는다(실측). Windows 쪽 프로그램이 닿지 못한다.
-- **내 Tailscale 신원.** 요청마다 `Tailscale-User-Login` 이 있어야 하고(이 기기의 `tailscale serve` 만 붙인다),
-  `ARCDR_OWNERS` 에 든 계정이어야 한다. `tailscale funnel` 은 쓰지 않는다.
-- **같은 출처의 쓰기만.** 쓰기는 공개한 주소의 `Origin` 이어야 하고, `Host` 도 그 이름이어야 한다.
-- **정해 둔 키만.** Ctrl+C 는 없다. 고르기는 화면을 다시 읽어 선택지가 바뀌었으면 거절한다.
-- **HTML 로 꽂지 않는다.** 대화 기록에는 어디서 온 글이든 섞인다. 마크다운은 요소로 만든다. CSP 도 엄격하다.
-- **파일.** 올리기는 이미지 · PDF · 글 파일만, 내용이 형식과 맞아야 하고, 15MB 까지, 14일 뒤 지운다. 미리보기는
-  `~/.ssh` · `~/.claude.json` · 로그인 파일 · `.env` · 키 파일을 링크를 따라간 실제 위치로 판정해 거절한다.
-- **푸시.** 구독 주소는 브라우저 푸시 서비스만, 내용은 브라우저용으로 암호화한다.
+- **루프백에서만 열려요.** 서버는 `127.0.0.2` 에 떠요. WSL 은 `127.0.0.1` 에 뜬 건 Windows 로 넘기지만
+  `127.0.0.2` 는 넘기지 않아요(직접 확인했어요). 그래서 Windows 쪽 프로그램은 닿을 수 없어요.
+- **내 Tailscale 계정만 들어와요.** 요청마다 `Tailscale-User-Login` 이 있어야 하는데, 이건 이 기기의
+  `tailscale serve` 만 붙일 수 있어요. 그 계정이 `ARCDR_OWNERS` 에 있어야 해요. `tailscale funnel` 은 쓰지 않아요.
+- **쓰기는 같은 출처에서만.** 무언가를 바꾸는 요청은 공개한 주소의 `Origin` 이어야 하고, `Host` 도 그 이름이어야 해요.
+- **정해 둔 키만 보내요.** Ctrl+C 는 없어요. 선택지를 고를 때는 화면을 다시 읽어서 바뀌었으면 보내지 않아요.
+- **HTML 로 그리지 않아요.** 대화 기록에는 어디서 온 글이든 섞일 수 있어서, 마크다운은 요소로 하나씩 만들어요. CSP 도 엄격하게 걸어 뒀어요.
+- **파일.** 올릴 수 있는 건 이미지, PDF, 텍스트뿐이고, 내용이 형식과 맞아야 하고, 15MB 까지예요. 14일이 지나면 지워요.
+  파일 보기는 `~/.ssh`, `~/.claude.json`, 로그인 정보, `.env`, 키 파일을 거절해요. 링크를 따라가 실제 위치로 판단해요.
+- **저장하는 설정.** 커맨드와 표시 설정은 통째로 검사한 뒤에만 저장해요. 폰에서 표시 설정을 바꾸면 원래 파일은
+  `display.json.bak` 으로 남겨 둬요.
+- **푸시.** 구독 주소는 브라우저 푸시 서비스만 받고, 내용은 그 브라우저만 풀 수 있게 암호화해요.
 
 </details>
 
-## 내 것으로 꾸미기
-
-모드가 herdr 에 값을 보내고, `~/.config/arcdr/display.json` 이 그 값을 어디에 둘지 정한다.
-
-```json
-{
-  "agent": { "badge": { "from": "token:tree", "color": "cyan", "bold": true },
-             "line": [{ "from": "token:stage", "rules": [{ "startsWith": "◇", "color": "pink", "bold": true }] }] },
-  "band": [{ "left": [{ "from": "token:progress", "as": "dots" }, { "from": "token:doing" }],
-             "right": [{ "from": "token:context", "as": "meter", "rules": [{ "above": 80, "color": "error" }] }] }],
-  "alerts": [{ "from": "token:stage", "startsWith": "✓", "body": "{name} 끝남" }]
-}
-```
-
-칸은 `text` · `chip` · `badge` · `dots` · `meter` · `ago` 로 그리고, 값에 따른 규칙을 붙인다. 파일이 없으면 herdr
-자신의 왼쪽 목록 설정을 그대로 옮긴다. 형식 전체와 예시는 **[docs/mods.ko.md](docs/mods.ko.md)** 에 있다.
-
 ## 설정
 
-`~/.config/arcdr/env` (설치 스크립트가 쓴다):
+`~/.config/arcdr/env` (설치 스크립트가 만들어요):
 
 | 변수 | 기본값 | |
 |---|---|---|
-| `ARCDR_OWNERS` | — | 들어올 수 있는 Tailscale 계정, 쉼표로. 반드시 |
-| `ARCDR_PUBLIC_HOSTS` | — | `tailscale serve` 가 연 이름, 443 이 아니면 `:포트` 까지 |
+| `ARCDR_OWNERS` | — | 들어올 수 있는 Tailscale 계정, 쉼표로 구분. 꼭 있어야 해요 |
+| `ARCDR_PUBLIC_HOSTS` | — | `tailscale serve` 로 연 주소 이름. 443 이 아니면 `:포트` 까지 |
 | `ARCDR_MACHINE` | 호스트 이름 | 연결 화면에 보일 이름 |
-| `ARCDR_HOST` · `ARCDR_PORT` | `127.0.0.2` · `7420` | 루프백만 |
+| `ARCDR_HOST` · `ARCDR_PORT` | `127.0.0.2` · `7420` | 루프백 주소만 돼요 |
 | `ARCDR_TRANSCRIPT_ROOTS` | `~/.claude/projects` | 대화 기록이 있는 곳 |
 | `HERDR_SOCKET_PATH` | `~/.config/herdr/herdr.sock` | herdr 소켓 |
 
-## 다른 방법과 견주면
+같은 폴더에 `display.json`(어디에 무엇을 보일지 — [docs/mods.ko.md](docs/mods.ko.md))과 `shortcuts.json`(등록한
+커맨드)도 있어요.
+
+## 다른 방법과 비교하면
 
 | | SSH 앱 + herdr | Claude 원격 제어 | **arcdr** |
 |---|:-:|:-:|:-:|
-| 여러 Claude 계정의 세션을 한 목록에 | ✓ | 한 번에 한 계정 | ✓ |
+| 여러 Claude 계정의 세션을 한 목록에서 | ✓ | 한 번에 한 계정 | ✓ |
+| herdr 사이드바 모습 그대로의 목록 | 터미널 글자로 | – | ✓ |
+| 모드가 보낸 값을 원하는 자리에 | 터미널 글자로 | – | ✓ |
 | 폰에서 Claude 로그인 없이 | ✓ | – | ✓ |
 | 선택지를 버튼으로 | – | ✓ | ✓ |
-| 대화는 채팅으로, 고친 것은 비교로 | – | ✓ | ✓ |
-| 모드가 herdr 에 보낸 값 보기 | 터미널 글자로 | ? | ✓ |
+| 대화는 채팅으로, 고친 내용은 비교로 | – | ✓ | ✓ |
 
 ## 개발
 
 ```bash
-bun test              # 접근 판단 · 메뉴 · 대화 기록 · 표시 설정 · 푸시 · 업로드 · 경로
+bun run test             # 접근 판단 · 메뉴 · 대화 기록 · 표시 설정과 편집 · 푸시 · 업로드 · 경로
 bun run typecheck
-bun run check         # prettier + 타입 + 시험
-bun run demo          # 가짜 에이전트로 화면 보기
+bun run check            # prettier + 타입 + 시험
+bun run demo             # 가짜 에이전트로 화면 보기
+bun run display tokens   # 지금 칸들이 보내는 값
 scripts/setup.sh build && scripts/setup.sh service   # 고친 뒤 다시 빌드하고 띄우기
 ```
 
-`server/` — Bun 서버: `app.ts` 가 `Backend` 위의 경로를, `main.ts` 가 herdr 연결을 맡는다. `web/` — Preact 화면.
-입력을 시험할 때는 쓰고 있는 칸이 아니라 따로 띄운 herdr 세션(`herdr --session test server`)을 쓴다.
+`server/` 는 Bun 서버예요. `app.ts` 가 `Backend` 위에 경로를 얹고, `main.ts` 가 herdr 와 이어 줘요. `web/` 은
+Preact 화면, `mods/arcdr-report/` 는 기본 모드예요(그 안에서 `claude plugin test .`). 입력을 시험할 때는 지금
+쓰고 있는 칸 말고 따로 띄운 herdr 세션(`herdr --session test server`)을 쓰세요.
 
 ## 라이선스
 

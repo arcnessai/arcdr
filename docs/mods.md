@@ -15,6 +15,58 @@ herdr (pane title, pane tokens, space tokens, tab label, agent state)
 arcdr server ── display.json ──▶ list rows · chat header · band · footer · notifications
 ```
 
+## Four ways in
+
+| You want | Do this |
+|---|---|
+| The usual things on the phone, no code | Install the **starter mod**: `scripts/setup.sh mod` ([below](#the-starter-mod)) |
+| Something specific — "show my branch", "tell me when tests fail" | Ask Claude Code in this repository; the [`arcdr-mod`](../.claude/skills/arcdr-mod/SKILL.md) skill finds or writes what reports it and places it |
+| To move things around | On the phone: **Settings → Display → Customize** ([below](#from-the-phone-the-display-editor)) |
+| A notification from your own script, hook or mod | Set the `notify` token ([below](#ring-the-phone-notify)) |
+
+## The starter mod
+
+[`mods/arcdr-report`](../mods/arcdr-report/README.md) is a Claude Code mod that reports what each session is
+doing, so a person who has never written a mod sees it on the phone the moment it is installed:
+
+| Token | Example | arcdr shows it (without a display.json) |
+|---|---|---|
+| `tool` | `Edit search/rank.ts`, `Bash bun test` | above the message box |
+| `turnStart` | epoch ms | above the message box, as "4 minutes ago" |
+| `todo` · `todoNow` | `3/7` · `Writing the tests` | above the message box, as dots and the item in progress |
+| `context` | `42` | above the message box, as a bar that turns yellow, then red |
+| `branch` · `cost` | `main` · `1.23` | under the message box |
+| `limit5h` · `limitWeek` (+ `…Reset`) | `58` · ISO time | under the message box, as bars and "in 2 hours" |
+
+```bash
+scripts/setup.sh mod      # claude plugin marketplace add <this repo> && claude plugin install arcdr-report@arcdr
+scripts/setup.sh unmod    # take it out again
+```
+
+New Claude Code sessions load it; running ones after `/reload-plugins`. It reports nothing in unattended runs
+(`claude -p`) or outside a herdr pane, and clears what it reported when a session ends. It is also the
+reference for writing your own: one report per change, only the tokens that changed.
+
+## Ring the phone: `notify`
+
+Any mod, hook or script in a herdr pane can send a phone notification by setting the token `notify`:
+
+```bash
+herdr pane report-metadata "$HERDR_PANE_ID" --source deploy --token notify="Deploy finished: v1.4.2"
+```
+
+Each new value is one notification (title: the agent's name; tap opens its conversation). The value is never
+drawn. To send the same words twice, clear it in between (`--clear-token notify`) or give it `--ttl-ms`. Each
+device chooses in **Settings → Notifications** whether it hears mods.
+
+## From the phone: the display editor
+
+**Settings → Display → Customize** lists every value your agents report right now. Tap one to choose where it
+shows (before the name, under it, above or below the message box, or hidden), how it looks (text, chip,
+badge, dots, bar, time ago), its colour and the words before it — with the list row and the message box
+drawn as they will look. **Save** writes `display.json` (the file it replaces stays as `display.json.bak`).
+Rules and alerts are kept as they are; write those in the file.
+
 ## What a mod can report
 
 Every herdr pane has `HERDR_PANE_ID`, `HERDR_TAB_ID`, `HERDR_WORKSPACE_ID` and `HERDR_BIN_PATH` in its
@@ -84,7 +136,8 @@ shape.
 `~/.config/arcdr/display.json`. The server rereads it when it changes; an open page picks it up within 30
 seconds. Without the file, arcdr reads herdr's own sidebar rows (`[ui.sidebar.agents.rows_by_agent]` in
 `~/.config/herdr/config.toml`) so the list looks as it does in herdr; without those, it shows the
-conversation title under each name and any reported value as a chip in the band.
+conversation title under each name. Either way the band and the footer draw the starter mod's values, and
+any other reported value as a chip.
 **Settings → Display** says which of the three is in use and lists what in the file it could not use.
 
 ```json
@@ -209,6 +262,11 @@ and the spec draws them like the terminal does:
 
 ## Checking
 
-- **Settings → Display** — where the spec came from, and every part it dropped with the reason.
-- `herdr agent list` — the `tokens` each pane reports right now.
-- The values arcdr was given: the `agents[].tokens` in any snapshot on `/api/events`.
+```bash
+bun run display tokens   # what each agent and space reports right now
+bun run display show     # the spec in use, and where it came from
+bun run display check    # whether display.json can be used as it is (exit 1 when not)
+```
+
+- **Settings → Display** says where the spec came from and lists every part it dropped, with the reason.
+- `herdr agent list` shows the same tokens from herdr's side.

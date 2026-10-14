@@ -1,9 +1,12 @@
 ---
 name: arcdr-setup
-description: Install arcdr on this machine so the person can watch and answer their herdr agents from a phone or another computer over Tailscale — checks herdr, installs and logs in Tailscale, turns on tailnet HTTPS, installs Bun, builds, writes the config, runs the service, publishes the tailnet address and verifies; also status, update and uninstall. Use for "set up arcdr", "install arcdr", "arcdr 설치", "폰에서 herdr 보기", "connect my phone to herdr", "Tailscale 연결", "arcdr status", "update arcdr", "uninstall arcdr".
+description: Install arcdr on this machine so the person can watch and answer their herdr agents from a phone or another computer over Tailscale — checks herdr, installs and logs in Tailscale, turns on tailnet HTTPS, installs Bun, builds, writes the config, runs the service, publishes the tailnet address and verifies; also status, update and uninstall. Use for "셋팅해줘", "세팅해줘", "설치해줘", "arcdr 깔아줘", "폰에서 herdr 보기", "set it up", "set up arcdr", "install arcdr", "connect my phone to herdr", "Tailscale 연결", "arcdr status", "update arcdr", "uninstall arcdr" — including a first message that is only the repository link and "셋팅해줘".
 ---
 
 # Set up arcdr
+
+If this folder is not a clone of arcdr yet (the person pasted the link and said "set it up"), clone
+`https://github.com/arcnessai/arcdr` into `~/arcdr` — or where they say — and work from there.
 
 `scripts/setup.sh` does the work; this skill decides when to run it, hands the person what only they can do,
 and asks what only they can decide. Speak to the person in their language.
@@ -33,6 +36,10 @@ The steps that stop for a person, in order:
 
 After `verify` passes, walk them through the phone: Tailscale app on with the same account → open the printed
 address in Chrome → menu → *Install app*. On another computer: Tailscale on, open the address.
+
+Then offer the starter mod, once: "Should the phone also show what each session is doing — the file being
+edited, the to-do list, the context used?" On a yes, `scripts/setup.sh mod` (it installs `mods/arcdr-report`
+into Claude Code; new sessions load it). More values, other places, phone notifications: the `arcdr-mod` skill.
 
 ## Decide with the person, never by default
 
@@ -68,6 +75,8 @@ Server log: `journalctl --user -u arcdr -f`. Every refused request is logged wit
 
 ## Update and uninstall
 
-- Update: `git pull`, then `scripts/setup.sh build && scripts/setup.sh service` (rebuilds and restarts).
+- Update: `git pull`, then `scripts/setup.sh build && scripts/setup.sh service` (rebuilds and restarts); with the
+  starter mod installed, `/reload-plugins` in running sessions.
 - Uninstall: `scripts/setup.sh uninstall` stops the service and releases the tailnet port;
-  `--purge` also removes the config. Tailscale and Bun stay; ask before removing either.
+  `--purge` also removes the config; `scripts/setup.sh unmod` removes the starter mod. Tailscale and Bun stay;
+  ask before removing either.
