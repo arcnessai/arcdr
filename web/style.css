@@ -481,6 +481,66 @@ p {
   border-radius: 999px;
   background: currentColor;
 }
+.session-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+}
+.session-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.session-chip:hover {
+  color: var(--text);
+}
+.session-chip.mode-bypassPermissions {
+  border-color: color-mix(in srgb, var(--red) 55%, var(--line));
+  color: var(--red);
+}
+.session-chip.mode-acceptEdits,
+.session-chip.mode-auto {
+  border-color: color-mix(in srgb, var(--purple) 55%, var(--line));
+  color: var(--purple);
+}
+.session-chip.mode-plan {
+  border-color: color-mix(in srgb, var(--cyan) 55%, var(--line));
+  color: var(--cyan);
+}
+.todo-list {
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 8px 10px;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 13px;
+}
+.todo-list li {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+}
+.todo-completed {
+  color: var(--dim);
+  text-decoration: line-through;
+}
+.todo-in_progress {
+  color: var(--yellow);
+  font-weight: 600;
+}
+.todo-box {
+  flex: none;
+  width: 1em;
+}
 .part-row {
   display: flex;
   align-items: center;
@@ -1960,4 +2020,83 @@ a.link code {
 .theme-name {
   font-size: 13px;
   font-weight: 650;
+}
+
+/* file preview */
+.file-view {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.file-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 8px 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+.file-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+.file-body {
+  flex: 1;
+  margin: 0;
+  overflow: auto;
+  padding: 10px 0 calc(16px + env(safe-area-inset-bottom));
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  counter-reset: line;
+}
+.fl {
+  display: block;
+  padding-right: 14px;
+  white-space: pre;
+}
+.fl::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 4.2em;
+  padding-right: 1em;
+  color: var(--dim);
+  text-align: right;
+  user-select: none;
+}
+.file-note {
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.file-note.warn {
+  color: var(--orange);
+}
+.tool-file {
+  margin: 0 0 4px 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cyan);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.code-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
 }

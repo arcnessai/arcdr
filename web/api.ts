@@ -18,6 +18,8 @@ export interface Health {
 export interface ScreenRead {
   text: string;
   menu: Menu | null;
+  /** The permission mode the footer names; null for the default (or no footer on screen). */
+  mode?: string | null;
 }
 
 export type ChatChunk = Omit<Chunk, "file"> & { file: string | null };
@@ -84,6 +86,10 @@ export const api = {
   startSession: (b: { space: string; cwd: string; label: string; prompt: string; resume: string | null }) =>
     request<{ pane: string; sent: boolean }>("/api/sessions", { method: "POST", body: JSON.stringify(b) }, 120_000),
   close: (pane: string) => post(agentPath(pane, "close"), {}),
+  file: (pane: string, path: string) =>
+    request<{ path: string; text: string; size: number; truncated: boolean }>(
+      `${agentPath(pane, "file")}?path=${encodeURIComponent(path)}`,
+    ),
   /** Sends a file's bytes as they are; the server names and keeps it, and answers where. */
   upload: async (pane: string, file: Blob, name: string): Promise<{ path: string; url: string }> => {
     const res = await fetch(agentPath(pane, "upload"), {

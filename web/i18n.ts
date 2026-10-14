@@ -106,6 +106,18 @@ const en = {
     "arcness-light": "Arcness Light",
     nord: "Nord",
   },
+  modes: {
+    default: "Ask each time",
+    acceptEdits: "Accept edits",
+    plan: "Plan mode",
+    bypassPermissions: "Allow everything",
+    auto: "Auto mode",
+  },
+  todos: "To-do",
+  openFile: "File",
+  open: "Open",
+  close: "Close",
+  fileTruncated: "Only the first part is shown.",
   displayHelp: "What mods report to herdr, and where arcdr shows it, is set in ~/.config/arcdr/display.json — see docs/mods.md.",
 };
 
@@ -217,6 +229,18 @@ const ko: Strings = {
     "arcness-light": "Arcness 밝게",
     nord: "Nord",
   },
+  modes: {
+    default: "매번 묻기",
+    acceptEdits: "편집 자동 허용",
+    plan: "계획 모드",
+    bypassPermissions: "모두 허용",
+    auto: "자동 모드",
+  },
+  todos: "할 일",
+  openFile: "파일",
+  open: "열기",
+  close: "닫기",
+  fileTruncated: "앞부분만 보입니다.",
   displayHelp:
     "모드가 herdr 에 보낸 값을 arcdr 어디에 어떻게 보일지는 ~/.config/arcdr/display.json 에서 정합니다 — docs/mods.md 참고.",
 };
@@ -327,6 +351,18 @@ const ja: Strings = {
     "arcness-light": "Arcness ライト",
     nord: "Nord",
   },
+  modes: {
+    default: "毎回確認",
+    acceptEdits: "編集を自動許可",
+    plan: "プランモード",
+    bypassPermissions: "すべて許可",
+    auto: "オートモード",
+  },
+  todos: "やること",
+  openFile: "ファイル",
+  open: "開く",
+  close: "閉じる",
+  fileTruncated: "先頭だけ表示しています。",
   displayHelp:
     "モッドが herdr に送った値を arcdr のどこにどう出すかは ~/.config/arcdr/display.json で決めます — docs/mods.md を参照。",
 };
@@ -437,6 +473,12 @@ const zh: Strings = {
     "arcness-light": "Arcness 浅色",
     nord: "Nord",
   },
+  modes: { default: "每次询问", acceptEdits: "自动允许编辑", plan: "计划模式", bypassPermissions: "全部允许", auto: "自动模式" },
+  todos: "待办",
+  openFile: "文件",
+  open: "打开",
+  close: "关闭",
+  fileTruncated: "只显示前面一部分。",
   displayHelp: "模组报告给 herdr 的值在 arcdr 的哪里、怎样显示，由 ~/.config/arcdr/display.json 决定 — 见 docs/mods.md。",
 };
 

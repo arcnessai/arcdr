@@ -191,3 +191,18 @@ export function keysToChoose(menu: Menu, n: number): string[] | null {
   const delta = target - menu.cursor;
   return [...Array<string>(Math.abs(delta)).fill(delta > 0 ? "down" : "up"), "enter"];
 }
+
+/**
+ * The permission mode Claude Code's footer names ("⏵⏵ accept edits on", "⏸ plan mode on"); null when the
+ * footer names none, which is the default mode (or the footer is not on screen).
+ */
+export function parseMode(screen: string): string | null {
+  const m = /(?:⏵⏵|⏸)\s+([a-z][a-z ]+?)\s+on\b/i.exec(screen.split("\n").slice(-12).join("\n"));
+  if (!m) return null;
+  const words = m[1]!.toLowerCase();
+  if (words.startsWith("accept edits")) return "acceptEdits";
+  if (words.startsWith("plan")) return "plan";
+  if (words.startsWith("bypass")) return "bypassPermissions";
+  if (words.startsWith("auto")) return "auto";
+  return words;
+}

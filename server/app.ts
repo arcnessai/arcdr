@@ -5,9 +5,10 @@ import { filterSlash, type Suggestion } from "./complete";
 import { SESSION_ID, type PastSession } from "./sessions";
 import type { LoadedDisplay } from "./spec";
 import { contentTypeOf, MAX_UPLOAD_BYTES, saveUpload, uploadPath } from "./uploads";
+import { readPreview } from "./files";
 import { validEndpoint, type PushSubscriptionRecord } from "./push";
 import { HerdrError, type Agent, type Snapshot } from "./herdr";
-import { keysToChoose, parseMenu } from "./screen";
+import { keysToChoose, parseMenu, parseMode } from "./screen";
 import type { Chunk } from "./transcript";
 
 /**
@@ -288,7 +289,7 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
       });
     }
 
-    const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose|upload|close)$/.exec(path);
+    const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose|upload|close|file)$/.exec(path);
     if (!m) throw new HttpError(404, "not_found", "no such route");
     const pane = decodeURIComponent(m[1]!);
     if (!/^[\w-]+:[\w-]+$/.test(pane)) throw new HttpError(400, "bad_pane", "malformed pane id");
@@ -318,9 +319,19 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
       return json(200, { items: [...fromMods, ...found.filter((s) => !fromMods.some((m) => m.value === s.value))] });
     }
 
+    if (action === "file" && req.method === "GET") {
+      try {
+        return json(200, readPreview(url.searchParams.get("path") ?? "", process.env.HOME ?? "/root"));
+      } catch (e) {
+        const code = (e as { code?: string }).code ?? "internal";
+        const status = code === "not_found" ? 404 : code === "secret" ? 403 : code === "internal" ? 500 : 400;
+        throw new HttpError(status, code, (e as Error).message);
+      }
+    }
+
     if (action === "screen" && req.method === "GET") {
       const text = await backend.readScreen(pane);
-      return json(200, { text: trimScreen(text), menu: parseMenu(text) });
+      return json(200, { text: trimScreen(text), menu: parseMenu(text), mode: parseMode(text) });
     }
 
     if (action === "upload" && req.method === "POST") {
@@ -402,7 +413,7 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
       await backend.sendKeys(pane, keysToChoose(menu, n)!);
       await sleep(300);
       const text = await backend.readScreen(pane);
-      return json(200, { text: trimScreen(text), menu: parseMenu(text) });
+      return json(200, { text: trimScreen(text), menu: parseMenu(text), mode: parseMode(text) });
     }
 
     throw new HttpError(405, "method", "method not allowed");
@@ -441,7 +452,8 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
     } catch (e) {
       if (e instanceof HttpError) return json(e.status, { code: e.code, message: e.message });
       if (e instanceof HerdrError) {
-        const status = e.code === "agent_blocked" ? 409 : e.code === "pane_not_found" ? 404 : e.code.startsWith("bad_") ? 400 : 502;
+        const status =
+          e.code === "agent_blocked" ? 409 : e.code === "pane_not_found" ? 404 : e.code.startsWith("bad_") ? 400 : 502;
         return json(status, { code: e.code, message: e.message });
       }
       console.error(e);

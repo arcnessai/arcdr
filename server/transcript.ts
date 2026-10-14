@@ -20,7 +20,11 @@ export type ChatItem =
    * reads it — removed by content mid-turn, or taken from the front at the end of a turn. Notifications
    * queue the same way, so they are kept (hidden) to keep the order of takes right.
    */
-  | { id: string; kind: "queue"; op: "add" | "remove" | "take"; text: string; hidden: boolean };
+  | { id: string; kind: "queue"; op: "add" | "remove" | "take"; text: string; hidden: boolean }
+  /** The session's permission mode or model as of this point; the newest of each is the current one. */
+  | { id: string; kind: "meta"; permissionMode?: string; model?: string }
+  /** The agent's checklist as TodoWrite last set it. */
+  | { id: string; kind: "todos"; items: { text: string; status: string }[] };
 
 /** What an Edit, MultiEdit, Write or NotebookEdit call did to a file, as before/after text pairs. */
 export interface FileChange {
@@ -172,6 +176,7 @@ function promptText(content: unknown): string {
 
 export function parseEntries(lines: string[]): ChatItem[] {
   const items: ChatItem[] = [];
+  let lastModel = "";
   for (const line of lines) {
     if (!line.trim()) continue;
     let e: Json;
@@ -218,6 +223,11 @@ export function parseEntries(lines: string[]): ChatItem[] {
       continue;
     }
 
+    if (e.type === "permission-mode" && str(e.permissionMode)) {
+      items.push({ id: `mode:${items.length}:${str(e.permissionMode)}`, kind: "meta", permissionMode: str(e.permissionMode) });
+      continue;
+    }
+
     if (e.type === "queue-operation") {
       const op =
         e.operation === "enqueue" ? "add" : e.operation === "remove" ? "remove" : e.operation === "dequeue" ? "take" : null;
@@ -240,6 +250,11 @@ export function parseEntries(lines: string[]): ChatItem[] {
     }
 
     if (e.type === "assistant") {
+      const model = str(message.model);
+      if (model && model !== lastModel && !model.startsWith("<")) {
+        lastModel = model;
+        items.push({ id: `model:${id}`, kind: "meta", model });
+      }
       arr(message.content)
         .map(obj)
         .forEach((b, i) => {
@@ -259,6 +274,12 @@ export function parseEntries(lines: string[]): ChatItem[] {
                 };
               });
               items.push({ id: toolId, kind: "ask", questions, at });
+            } else if (name === "TodoWrite") {
+              const todos = arr(input.todos).map((x) => {
+                const o = obj(x);
+                return { text: str(o.content) || str(o.activeForm), status: str(o.status) || "pending" };
+              });
+              items.push({ id: toolId, kind: "todos", items: todos });
             } else if (name === "ExitPlanMode" && str(input.plan)) {
               items.push({ id: toolId, kind: "assistant", text: str(input.plan), at });
             } else {

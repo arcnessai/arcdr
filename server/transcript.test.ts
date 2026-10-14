@@ -223,3 +223,45 @@ describe("fileChange", () => {
     expect(c.edits[0]!.new.length).toBe(30_000);
   });
 });
+
+describe("session settings in the transcript", () => {
+  test("permission mode, model (once per change) and the TodoWrite checklist", () => {
+    const items = parseEntries([
+      line({ type: "permission-mode", permissionMode: "plan" }),
+      line({ type: "assistant", uuid: "a1", message: { model: "claude-opus-5-5", content: [{ type: "text", text: "hi" }] } }),
+      line({ type: "assistant", uuid: "a2", message: { model: "claude-opus-5-5", content: [] } }),
+      line({
+        type: "assistant",
+        uuid: "a3",
+        message: {
+          model: "claude-opus-5-5",
+          content: [
+            {
+              type: "tool_use",
+              id: "t9",
+              name: "TodoWrite",
+              input: {
+                todos: [
+                  { content: "Write tests", status: "completed" },
+                  { content: "Ship", status: "pending" },
+                ],
+              },
+            },
+          ],
+        },
+      }),
+    ]);
+    expect(items.filter((i) => i.kind === "meta")).toEqual([
+      { id: "mode:0:plan", kind: "meta", permissionMode: "plan" },
+      { id: "model:a1", kind: "meta", model: "claude-opus-5-5" },
+    ]);
+    expect(items.find((i) => i.kind === "todos")).toEqual({
+      id: "t9",
+      kind: "todos",
+      items: [
+        { text: "Write tests", status: "completed" },
+        { text: "Ship", status: "pending" },
+      ],
+    });
+  });
+});

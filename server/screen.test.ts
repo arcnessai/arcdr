@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { keysToChoose, parseMenu } from "./screen";
+import { keysToChoose, parseMenu, parseMode } from "./screen";
 
 const PERMISSION = `
 ● Running the tests now.
@@ -151,5 +151,14 @@ describe("keysToChoose", () => {
   });
   test("refuses an option the menu does not have", () => {
     expect(keysToChoose(parseMenu(PERMISSION)!, 7)).toBeNull();
+  });
+});
+
+describe("parseMode", () => {
+  test("names the mode the footer shows, and none for the default", () => {
+    expect(parseMode("❯ \n  ⏵⏵ bypass permissions on · 1 shell · ← for agents")).toBe("bypassPermissions");
+    expect(parseMode("  ⏵⏵ accept edits on (shift+tab to cycle)")).toBe("acceptEdits");
+    expect(parseMode("  ⏸ plan mode on (shift+tab to cycle)")).toBe("plan");
+    expect(parseMode("  ? for shortcuts")).toBeNull();
   });
 });

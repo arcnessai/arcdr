@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useMemo } from "preact/hooks";
+import { looksLikeFile, useFileOpener } from "./fileopener";
 import { Link, linkify, splitUrls } from "./linkify";
 
 /**
@@ -127,7 +128,19 @@ function codeSpan(code: string, key: number) {
         <code>{code}</code>
       </Link>
     );
+  if (looksLikeFile(code)) return <FileCode key={key} path={code} />;
   return <code key={key}>{code}</code>;
+}
+
+/** A path to a file inside an answer opens the file, when the chat around it can show one. */
+function FileCode({ path }: { path: string }) {
+  const open = useFileOpener();
+  if (!open) return <code>{path}</code>;
+  return (
+    <button class="code-link" onClick={() => open(path)}>
+      <code>{path}</code>
+    </button>
+  );
 }
 
 export function inline(text: string): ComponentChildren[] {

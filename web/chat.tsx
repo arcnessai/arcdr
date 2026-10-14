@@ -5,13 +5,16 @@ import * as I from "./icons";
 import { AgentLine, Badge, StatusDot } from "./lists";
 import { nameOf, PartRow, useDisplay } from "./parts";
 import { ChangeDiff, ChangesTab, changeStats, Stats } from "./changes";
+import { FileOpener, useFileOpener } from "./fileopener";
+import { FileView } from "./fileview";
 import { Linked } from "./linkify";
 import { UserText } from "./usertext";
 import { Markdown } from "./markdown";
 import { tokenAt, type Token } from "./token";
 import { t } from "./i18n";
 
-type Shown = Exclude<ChatItem, { kind: "tool-error" } | { kind: "queue" }>;
+type Shown = Exclude<ChatItem, { kind: "tool-error" } | { kind: "queue" } | { kind: "meta" } | { kind: "todos" }>;
+type Todos = Extract<ChatItem, { kind: "todos" }>["items"];
 type QueueOp = Extract<ChatItem, { kind: "queue" }>;
 type Tool = Extract<ChatItem, { kind: "tool" }>;
 type Row = { kind: "item"; item: Shown } | { kind: "tools"; id: string; tools: Tool[] };
@@ -72,6 +75,8 @@ function useChat(pane: string, polling: boolean) {
   const [state, setState] = useState<"loading" | "ready" | "none" | "error">("loading");
   const [clipped, setClipped] = useState(false);
   const [queue, setQueue] = useState<string[]>([]);
+  const [meta, setMeta] = useState<{ permissionMode?: string; model?: string }>({});
+  const [todos, setTodos] = useState<Todos | null>(null);
   const cursor = useRef<{ offset: number; file: string | null }>({ offset: 0, file: null });
   const queueRef = useRef<{ text: string; hidden: boolean }[]>([]);
 
@@ -92,7 +97,22 @@ function useChat(pane: string, polling: boolean) {
     }
     setQueue(queueRef.current.filter((x) => !x.hidden).map((x) => x.text));
 
-    const shown = incoming.filter((i): i is Shown => i.kind !== "tool-error" && i.kind !== "queue");
+    if (replace) {
+      setMeta({});
+      setTodos(null);
+    }
+    for (const i of incoming) {
+      if (i.kind === "meta")
+        setMeta((m) => ({
+          ...m,
+          ...(i.permissionMode && { permissionMode: i.permissionMode }),
+          ...(i.model && { model: i.model }),
+        }));
+      if (i.kind === "todos") setTodos(i.items);
+    }
+    const shown = incoming.filter(
+      (i): i is Shown => i.kind !== "tool-error" && i.kind !== "queue" && i.kind !== "meta" && i.kind !== "todos",
+    );
     setItems((prev) => {
       if (replace) return shown;
       if (shown.length === 0) return prev;
@@ -131,16 +151,18 @@ function useChat(pane: string, polling: boolean) {
     return () => clearInterval(timer);
   }, [pull, polling]);
 
-  return { items, failed, state, clipped, queue };
+  return { items, failed, state, clipped, queue, meta, todos };
 }
 
 /** The visible terminal and any menu on it. */
 function useScreen(pane: string, intervalMs: number | null) {
   const [text, setText] = useState("");
   const [menu, setMenu] = useState<Menu | null>(null);
-  const apply = useCallback((r: { text: string; menu: Menu | null }) => {
+  const [mode, setMode] = useState<string | null | undefined>(undefined);
+  const apply = useCallback((r: { text: string; menu: Menu | null; mode?: string | null }) => {
     setText(r.text);
     setMenu(r.menu);
+    setMode(r.mode);
   }, []);
   const refresh = useCallback(
     () =>
@@ -160,7 +182,7 @@ function useScreen(pane: string, intervalMs: number | null) {
     const t = setInterval(refresh, intervalMs);
     return () => clearInterval(t);
   }, [refresh, intervalMs]);
-  return { text, menu, refresh, apply };
+  return { text, menu, mode, refresh, apply };
 }
 
 function toRows(items: Shown[]): Row[] {
@@ -188,7 +210,14 @@ function LongText({ text, latest }: { text: string; latest: boolean }) {
   );
 }
 
+/** The file a tool call read or changed, for the preview. */
+function fileOf(x: Tool): string | null {
+  if (x.change) return x.change.path;
+  return x.name === "Read" && x.detail.startsWith("/") ? x.detail : null;
+}
+
 function ToolGroup({ tools, failed }: { tools: Tool[]; failed: Set<string> }) {
+  const openFile = useFileOpener();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<string | null>(null);
   const errors = tools.filter((x) => failed.has(x.id)).length;
@@ -221,6 +250,11 @@ function ToolGroup({ tools, failed }: { tools: Tool[]; failed: Set<string> }) {
                 <b>{x.name}</b> <span>{x.summary}</span>
                 {x.change && <Stats {...changeStats(x.change)} />}
               </button>
+              {fileOf(x) && openFile && (
+                <button class="tool-file" onClick={() => openFile(fileOf(x)!)}>
+                  {t.openFile}
+                </button>
+              )}
               {detail === x.id &&
                 (x.change ? (
                   <ChangeDiff change={x.change} />
@@ -738,6 +772,7 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
   const [keysOpen, setKeysOpen] = useState(false);
   const [pending, setPending] = useState<Pending[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [filePath, setFilePath] = useState<string | null>(null);
   const visible = useVisible();
   const pane = agent.pane;
 
@@ -821,74 +856,85 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
   const answering: Answering | null = showMenu ? { menu: screen.menu!, busy, choose } : null;
 
   return (
-    <section class={`chat st-${agent.status}`}>
-      <header class="chat-head">
-        {!wide && (
-          <a class="icon-btn" href={`#/s/${encodeURIComponent(agent.space)}`} aria-label={t.toList}>
-            <I.Back />
-          </a>
-        )}
-        <div class="chat-title">
-          <p class="chat-name">
-            <Badge agent={agent} />
-            <span class="ellipsis">{nameOf(spec, agent)}</span>
-          </p>
-          <AgentLine agent={agent} class="chat-sub" />
+    <FileOpener.Provider value={setFilePath}>
+      <section class={`chat st-${agent.status}`}>
+        <header class="chat-head">
+          {!wide && (
+            <a class="icon-btn" href={`#/s/${encodeURIComponent(agent.space)}`} aria-label={t.toList}>
+              <I.Back />
+            </a>
+          )}
+          <div class="chat-title">
+            <p class="chat-name">
+              <Badge agent={agent} />
+              <span class="ellipsis">{nameOf(spec, agent)}</span>
+            </p>
+            <AgentLine agent={agent} class="chat-sub" />
+          </div>
+          <ActionsMenu agent={agent} queued={chat.queue.length} onError={setToast} />
+          <span class={`status-pill st-${agent.status}`}>
+            <StatusDot status={agent.status} />
+            {STATUS_LABEL[agent.status]}
+          </span>
+        </header>
+
+        <div class="seg" role="tablist">
+          <button role="tab" aria-selected={tab === "chat"} onClick={() => setTab("chat")}>
+            {t.tabChat}
+          </button>
+          <button role="tab" aria-selected={tab === "changes"} onClick={() => setTab("changes")}>
+            {t.tabChanges}
+            {changedFiles > 0 && <span class="seg-count">{changedFiles}</span>}
+          </button>
+          <button role="tab" aria-selected={tab === "screen"} onClick={() => setTab("screen")}>
+            {t.tabScreen}
+          </button>
         </div>
-        <ActionsMenu agent={agent} queued={chat.queue.length} onError={setToast} />
-        <span class={`status-pill st-${agent.status}`}>
-          <StatusDot status={agent.status} />
-          {STATUS_LABEL[agent.status]}
-        </span>
-      </header>
 
-      <div class="seg" role="tablist">
-        <button role="tab" aria-selected={tab === "chat"} onClick={() => setTab("chat")}>
-          {t.tabChat}
-        </button>
-        <button role="tab" aria-selected={tab === "changes"} onClick={() => setTab("changes")}>
-          {t.tabChanges}
-          {changedFiles > 0 && <span class="seg-count">{changedFiles}</span>}
-        </button>
-        <button role="tab" aria-selected={tab === "screen"} onClick={() => setTab("screen")}>
-          {t.tabScreen}
-        </button>
-      </div>
-
-      {tab === "chat" ? (
-        <Messages
-          rows={rows}
-          failed={chat.failed}
-          pending={pending}
-          queue={chat.queue}
-          mine={mine}
-          state={chat.state}
-          clipped={chat.clipped}
-          answering={answering}
-        />
-      ) : tab === "changes" ? (
-        <div class="messages">
-          <ChangesTab items={chat.items} cwd={agent.cwd} />
-        </div>
-      ) : (
-        <ScreenPane text={screen.text} />
-      )}
-
-      <div class="dock">
-        {toast && (
-          <p class="toast" role="status">
-            {toast}
-          </p>
+        {tab === "chat" ? (
+          <Messages
+            rows={rows}
+            failed={chat.failed}
+            pending={pending}
+            queue={chat.queue}
+            mine={mine}
+            state={chat.state}
+            clipped={chat.clipped}
+            answering={answering}
+          />
+        ) : tab === "changes" ? (
+          <div class="messages">
+            <ChangesTab items={chat.items} cwd={agent.cwd} />
+          </div>
+        ) : (
+          <ScreenPane text={screen.text} />
         )}
-        {spec.band?.map((row, i) => (
-          <PartRow key={i} row={row} of={agent} />
-        ))}
-        {answering && <MenuPanel {...answering} />}
-        {(keysOpen || tab === "screen") && <KeyBar pane={pane} onError={setToast} />}
-        <Composer agent={agent} onSend={send} keysOpen={keysOpen} onKeys={() => setKeysOpen(!keysOpen)} onError={setToast} />
-        {spec.footer && <PartRow row={spec.footer} of={agent} />}
-      </div>
-    </section>
+
+        <div class="dock">
+          {toast && (
+            <p class="toast" role="status">
+              {toast}
+            </p>
+          )}
+          <SessionChips
+            agent={agent}
+            mode={screen.mode ?? chat.meta.permissionMode ?? "default"}
+            model={chat.meta.model ?? null}
+            todos={chat.todos}
+            onRefresh={() => void screen.refresh()}
+            onError={setToast}
+          />
+          {spec.band?.map((row, i) => (
+            <PartRow key={i} row={row} of={agent} />
+          ))}
+          {answering && <MenuPanel {...answering} />}
+          {(keysOpen || tab === "screen") && <KeyBar pane={pane} onError={setToast} />}
+          <Composer agent={agent} onSend={send} keysOpen={keysOpen} onKeys={() => setKeysOpen(!keysOpen)} onError={setToast} />
+          {spec.footer && <PartRow row={spec.footer} of={agent} />}
+        </div>
+        {filePath && <FileView pane={pane} path={filePath} onClose={() => setFilePath(null)} />}
+      </section>
+    </FileOpener.Provider>
   );
 }
 
@@ -948,6 +994,63 @@ function ActionsMenu({ agent, queued, onError }: { agent: Agent; queued: number;
               ))}
           </ul>
         </>
+      )}
+    </div>
+  );
+}
+
+/** "claude-opus-5-5" → "Opus 5.5"; anything else as it is. */
+export function modelName(id: string): string {
+  const m = /^claude-([a-z]+)-(\d+)-(\d+)/.exec(id);
+  return m ? `${m[1]![0]!.toUpperCase()}${m[1]!.slice(1)} ${m[2]}.${m[3]}` : id;
+}
+
+/** Permission mode, model and checklist — the session's settings as chips, each one a tap from changing. */
+function SessionChips(props: {
+  agent: Agent;
+  mode: string;
+  model: string | null;
+  todos: Todos | null;
+  onRefresh: () => void;
+  onError: (m: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const pane = props.agent.pane;
+  const act = (work: () => Promise<unknown>) =>
+    work()
+      .then(() => setTimeout(props.onRefresh, 350))
+      .catch((e) => props.onError(e instanceof ApiError ? e.message : String(e)));
+  const done = props.todos?.filter((x) => x.status === "completed").length ?? 0;
+  return (
+    <div class="session-chips">
+      <button
+        class={`session-chip mode-${props.mode}`}
+        onClick={() => act(() => api.keys(pane, ["shift+tab"]))}
+        title={t.cycleMode}
+      >
+        {t.modes[props.mode as keyof typeof t.modes] ?? props.mode}
+      </button>
+      {props.model && (
+        <button class="session-chip" onClick={() => act(() => api.send(pane, "/model"))} title={t.pickModel}>
+          {modelName(props.model)}
+        </button>
+      )}
+      {props.todos && props.todos.length > 0 && (
+        <button class="session-chip" aria-expanded={open} onClick={() => setOpen(!open)}>
+          {t.todos} {done}/{props.todos.length}
+        </button>
+      )}
+      {open && props.todos && (
+        <ul class="todo-list">
+          {props.todos.map((x, i) => (
+            <li key={i} class={`todo-${x.status}`}>
+              <span class="todo-box" aria-hidden="true">
+                {x.status === "completed" ? "✓" : x.status === "in_progress" ? "◐" : "○"}
+              </span>
+              {x.text}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

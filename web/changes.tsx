@@ -3,6 +3,7 @@ import type { ChatItem } from "./api";
 import { countChanges, diffLines, hunks } from "./diff";
 import { t } from "./i18n";
 import { commonDir, displayPath } from "./paths";
+import { useFileOpener } from "./fileopener";
 
 type Tool = Extract<ChatItem, { kind: "tool" }>;
 export type FileChange = NonNullable<Tool["change"]>;
@@ -54,6 +55,7 @@ export function ChangeDiff({ change }: { change: FileChange }) {
 
 /** Every file this conversation changed (as far as it is loaded), newest last, each with its edits in order. */
 export function ChangesTab({ items, cwd }: { items: ChatItem[]; cwd: string }) {
+  const openFile = useFileOpener();
   const { files, root } = useMemo(() => {
     const byPath = new Map<string, FileChange[]>();
     for (const i of items)
@@ -90,6 +92,18 @@ export function ChangesTab({ items, cwd }: { items: ChatItem[]; cwd: string }) {
             </span>
             {f.created && <span class="change-new">{t.newFile}</span>}
             <Stats {...f.stats} />
+            {openFile && (
+              <button
+                class="tool-file"
+                onClick={(e) => {
+                  // A button inside a summary would also fold the details.
+                  e.preventDefault();
+                  openFile(f.path);
+                }}
+              >
+                {t.open}
+              </button>
+            )}
           </summary>
           {f.changes.map((c, i) => (
             <ChangeDiff key={i} change={c} />
