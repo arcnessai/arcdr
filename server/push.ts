@@ -2,7 +2,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { dirname } from "node:path";
 import webpush from "web-push";
 import type { Agent, AgentStatus, Snapshot } from "./herdr";
-import { matches, valueOf, type Alert } from "./spec";
+import { matches, NOTIFY_TOKEN, valueOf, type Alert } from "./spec";
 
 /**
  * Web Push: a phone that turned notifications on hears when an agent starts waiting for an answer
@@ -116,6 +116,9 @@ export function eventFor(prev: AgentStatus, next: AgentStatus): Exclude<PushEven
   return null;
 }
 
+/** Messages a mod sends on purpose are each worth hearing; the window only stops a loop from flooding the phone. */
+const NOTIFY_QUIET_MS = 5_000;
+
 export type Deliver = (sub: PushSubscriptionRecord, payload: string, urgent: boolean) => Promise<void>;
 
 export class Notifier {
@@ -139,6 +142,11 @@ export class Notifier {
       if (!this.primed || prev === undefined) continue;
       const event = eventFor(prev.status, a.status);
       if (event) void this.notify(a, event, `${a.pane}:${event}`);
+      // A mod or a hook asking for the phone in so many words: each new value is one notification.
+      const said = a.tokens[NOTIFY_TOKEN]?.trim();
+      if (said && said !== prev.tokens[NOTIFY_TOKEN]?.trim()) {
+        void this.notify(a, { body: said.slice(0, 200) }, `${a.pane}:notify`, NOTIFY_QUIET_MS);
+      }
       // A mod's value starting to meet an alert's conditions rings — the change, not the value standing still.
       alerts.forEach((alert, i) => {
         const now = valueOf(alert.from, a);
@@ -151,10 +159,10 @@ export class Notifier {
     this.primed = true;
   }
 
-  async notify(agent: Agent, event: Exclude<PushEvent, "custom"> | { body: string }, key: string) {
+  async notify(agent: Agent, event: Exclude<PushEvent, "custom"> | { body: string }, key: string, quietMs = this.quietMs) {
     const now = Date.now();
     // A value that flaps (blocked, working, blocked) inside the quiet window rings once.
-    if (now - (this.sentAt.get(key) ?? 0) < this.quietMs) return;
+    if (now - (this.sentAt.get(key) ?? 0) < quietMs) return;
     this.sentAt.set(key, now);
     const pref: PushEvent = typeof event === "string" ? event : "custom";
     for (const sub of this.store.list()) {

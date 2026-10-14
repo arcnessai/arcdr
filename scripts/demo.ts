@@ -297,7 +297,7 @@ const backend: Backend = {
   },
 };
 
-const display: DisplaySpec = {
+let display: DisplaySpec = {
   agent: {
     badge: { from: "token:tree", color: "cyan", bold: true },
     name: ["field:tab", "field:title"],
@@ -367,6 +367,7 @@ const handle = createApp({
   // The demo listens on 127.0.0.1 only and holds nothing real.
   gate: () => ({ ok: true, login: "demo@example.com" }),
   display: () => ({ spec: display, origin: "file", errors: [] }),
+  saveDisplay: (spec) => void (display = spec),
   shortcuts: {
     list: () => shortcuts,
     save: (list) => void (shortcuts = list),

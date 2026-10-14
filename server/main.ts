@@ -7,7 +7,7 @@ import { existsSync, statSync } from "node:fs";
 import { closePane, createTab, HerdrError, prompt, readScreen, sendInput, sendKeys, startClaude } from "./herdr";
 import { pastSessions } from "./sessions";
 import { SnapshotHub } from "./hub";
-import { displayLoader } from "./display";
+import { displayLoader, saveDisplay } from "./display";
 import { loadVapid, notification, Notifier, PushStore, webPushDeliver } from "./push";
 import { findTranscript, readFrom, readTail } from "./transcript";
 import { ShortcutStore } from "./shortcuts";
@@ -56,7 +56,8 @@ const vapid = loadVapid(join(cfg.configDir, "vapid.json"));
 const pushStore = new PushStore(join(cfg.configDir, "push.json"));
 const deliver = webPushDeliver(vapid, `https://${cfg.publicHosts[0] ?? "localhost"}`);
 // What to show besides the conversation: ~/.config/arcdr/display.json, else herdr's own sidebar rows.
-const display = displayLoader(join(cfg.configDir, "display.json"), join(home, ".config/herdr/config.toml"));
+const displayFile = join(cfg.configDir, "display.json");
+const display = displayLoader(displayFile, join(home, ".config/herdr/config.toml"));
 const notifier = new Notifier(pushStore, deliver, () => display().spec.alerts ?? []);
 hub.subscribe((event, data) => {
   if (event === "snapshot") notifier.observe(JSON.parse(data));
@@ -73,6 +74,7 @@ const handle = createApp({
   distDir: cfg.distDir,
   gate: (req, remote) => judge({ method: req.method, remote, headers: req.headers }, cfg),
   display,
+  saveDisplay: (spec) => saveDisplay(displayFile, spec),
   uploadsRoot,
   shortcuts: new ShortcutStore(join(cfg.configDir, "shortcuts.json")),
   push: {

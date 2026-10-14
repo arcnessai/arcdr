@@ -87,11 +87,50 @@ export const CONVERSATION_PART: Part = {
   rules: [{ equals: "Claude Code", hide: true }],
 };
 
+/** A value any mod, hook or script can set to ring the phone: each new value is one notification. */
+export const NOTIFY_TOKEN = "notify";
+
+const CONTEXT_RULES: Rule[] = [
+  { above: 80, color: "error", bold: true },
+  { above: 60, color: "warning" },
+];
+
+/**
+ * The values mods/arcdr-report sends, drawn the way a terminal band would be: what it does now and since
+ * when, the to-do list, the context used. A row whose values nobody reports draws nothing, so without that
+ * mod this is just the chips of whatever else is reported.
+ */
+export const DEFAULT_BAND: Row[] = [
+  { left: [{ from: "token:tool", max: 80 }], right: [{ from: "token:turnStart", as: "ago", dim: true }] },
+  {
+    left: [
+      { from: "token:todo", as: "dots", color: "suggestion" },
+      { from: "token:todoNow", dim: true, max: 60 },
+    ],
+    right: [{ from: "token:context", as: "meter", prefix: "context ", color: "dim", rules: CONTEXT_RULES }],
+  },
+  // Values a mod reports that nothing else shows still appear, as chips above the message box.
+  { left: [{ from: "tokens:rest", as: "chip" }] },
+];
+
+export const DEFAULT_FOOTER: Row = {
+  left: [
+    { from: "token:branch", as: "chip", color: "cyan" },
+    { from: "token:cost", prefix: "$", dim: true },
+  ],
+  right: [
+    { from: "token:limit5h", as: "meter", prefix: "5h ", color: "dim", rules: CONTEXT_RULES },
+    { from: "token:limit5hReset", as: "ago", dim: true },
+    { from: "token:limitWeek", as: "meter", prefix: "week ", color: "dim", rules: CONTEXT_RULES },
+    { from: "token:limitWeekReset", as: "ago", dim: true },
+  ],
+};
+
 export const DEFAULT_DISPLAY: DisplaySpec = {
   agent: { name: ["field:tab", "field:title", "field:kind"], line: [CONVERSATION_PART] },
   space: {},
-  // Values a mod reports that nothing else shows still appear, as chips above the message box.
-  band: [{ left: [{ from: "tokens:rest", as: "chip" }] }],
+  band: DEFAULT_BAND,
+  footer: DEFAULT_FOOTER,
 };
 
 const FORMATS = new Set<Format>(["text", "chip", "badge", "dots", "meter", "ago"]);

@@ -127,3 +127,26 @@ describe("alerts from mod values", () => {
     expect(bodies).toEqual(["yes: build — ◇ 입력 대기"]);
   });
 });
+
+describe("notify from a mod", () => {
+  test("each new value of the notify token is one notification; the same value standing still is not", async () => {
+    const store = new PushStore(join(dir, "d.json"));
+    store.save(sub("https://fcm.googleapis.com/fcm/send/yes"));
+    store.save(sub("https://fcm.googleapis.com/fcm/send/no", { custom: false }));
+    const bodies: string[] = [];
+    const n = new Notifier(
+      store,
+      async (s, payload) => void bodies.push(`${s.endpoint.split("/").pop()}: ${JSON.parse(payload).body}`),
+    );
+    const saying = (notify?: string) => ({
+      ...agent("w1:p1", "working"),
+      tokens: notify ? { notify } : ({} as Record<string, string>),
+    });
+    n.observe(snap(saying("left over from before")));
+    n.observe(snap(saying("Tests failed: 3")));
+    n.observe(snap(saying("Tests failed: 3")));
+    n.observe(snap(saying()));
+    await Bun.sleep(0);
+    expect(bodies).toEqual(["yes: Tests failed: 3"]);
+  });
+});

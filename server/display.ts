@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { cleanSpec, CONVERSATION_PART, DEFAULT_DISPLAY, type DisplaySpec, type LoadedDisplay, type Part } from "./spec";
 
 /** herdr's dracula sidebar colours, mapped to the palette names so a light theme can choose its own shade. */
@@ -70,7 +71,12 @@ export function fromHerdrConfig(toml: string, kind = "claude"): DisplaySpec | nu
   const spaceRows = (sidebar.spaces as Record<string, unknown> | undefined)?.rows as HerdrItem[][] | undefined;
   if (!Array.isArray(rows) && !Array.isArray(spaceRows)) return null;
 
-  const spec: DisplaySpec = { agent: { name: DEFAULT_DISPLAY.agent.name }, space: {}, band: DEFAULT_DISPLAY.band };
+  const spec: DisplaySpec = {
+    agent: { name: DEFAULT_DISPLAY.agent.name },
+    space: {},
+    band: DEFAULT_DISPLAY.band,
+    footer: DEFAULT_DISPLAY.footer,
+  };
   if (Array.isArray(rows)) {
     const first = rows[0] ?? [];
     const nameAt = first.findIndex((i) => i === "tab" || i === "title");
@@ -118,4 +124,16 @@ export function displayLoader(displayFile: string, herdrConfig: string): () => L
     cache = { key, value };
     return value;
   };
+}
+
+/**
+ * Writes a spec the display editor made. The file it replaces stays beside it as display.json.bak, since
+ * it may have been written by hand and this one was not.
+ */
+export function saveDisplay(displayFile: string, spec: DisplaySpec) {
+  mkdirSync(dirname(displayFile), { recursive: true });
+  if (existsSync(displayFile)) copyFileSync(displayFile, `${displayFile}.bak`);
+  const next = `${displayFile}.next`;
+  writeFileSync(next, JSON.stringify(spec, null, 2) + "\n");
+  renameSync(next, displayFile);
 }

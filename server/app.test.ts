@@ -3,6 +3,7 @@ import { createApp, type Backend } from "./app";
 import type { Agent, Snapshot } from "./herdr";
 import type { PushSubscriptionRecord } from "./push";
 import type { Shortcut } from "./shortcuts";
+import type { DisplaySpec } from "./spec";
 
 const agent: Agent = {
   pane: "w1:p1",
@@ -24,6 +25,7 @@ function setup() {
   const keys: string[][] = [];
   const saved: PushSubscriptionRecord[] = [];
   let shortcuts: Shortcut[] = [];
+  const savedDisplays: DisplaySpec[] = [];
   const snapshot: Snapshot = {
     version: "0.9.3",
     spaces: [{ id: "w1", number: 1, label: "s", status: "blocked", tokens: {} }],
@@ -61,6 +63,7 @@ function setup() {
       test: async () => {},
     },
     shortcuts: { list: () => shortcuts, save: (list) => void (shortcuts = list) },
+    saveDisplay: (spec) => void savedDisplays.push(spec),
   });
   const call = (path: string, init: RequestInit = {}) =>
     handle(
@@ -69,7 +72,7 @@ function setup() {
       () => {},
     );
   const post = (path: string, body: unknown) => call(path, { method: "POST", body: JSON.stringify(body) });
-  return { call, post, keys, saved, handle };
+  return { call, post, keys, saved, savedDisplays, handle };
 }
 
 describe("routes", () => {
@@ -135,5 +138,16 @@ describe("routes", () => {
     const res = await post("/api/shortcuts", { shortcuts: [{ text: "/compact", send: true }] });
     expect(res.status).toBe(200);
     expect(await (await call("/api/shortcuts")).json()).toEqual({ shortcuts: [{ text: "/compact", label: "", send: true }] });
+  });
+
+  test("a display spec from the editor is saved only when every part of it can be used", async () => {
+    const { post, savedDisplays } = setup();
+    const bad = await post("/api/display", { spec: { agent: {}, band: [{ left: [{ from: "token:x", as: "sparkle" }] }] } });
+    expect(bad.status).toBe(400);
+    expect((await bad.json()).message).toContain("band[0].left[0].as");
+    expect(savedDisplays).toEqual([]);
+    const ok = await post("/api/display", { spec: { agent: {}, band: [{ left: [{ from: "token:x", as: "chip" }] }] } });
+    expect(ok.status).toBe(200);
+    expect(savedDisplays[0]!.band).toEqual([{ left: [{ from: "token:x", as: "chip" }], right: undefined }]);
   });
 });

@@ -6,11 +6,12 @@
   "scripts": {
     "build": "bun run scripts/build.ts",
     "start": "bun run server/main.ts",
-    "test": "bun test",
+    "test": "bun test ./server ./web",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write server web scripts/*.ts",
-    "check": "prettier --check server web scripts/*.ts && tsc --noEmit && bun test",
-    "demo": "bun run scripts/build.ts && bun run scripts/demo.ts"
+    "check": "prettier --check server web scripts/*.ts && tsc --noEmit && bun test ./server ./web",
+    "demo": "bun run scripts/build.ts && bun run scripts/demo.ts",
+    "display": "bun run scripts/display.ts"
   },
   "dependencies": {
     "preact": "11.0.1",

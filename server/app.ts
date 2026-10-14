@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { Verdict } from "./access";
 import { filterSlash, type Suggestion } from "./complete";
 import { SESSION_ID, type PastSession } from "./sessions";
-import type { LoadedDisplay } from "./spec";
+import { cleanSpec, type DisplaySpec, type LoadedDisplay } from "./spec";
 import { contentTypeOf, MAX_UPLOAD_BYTES, saveUpload, uploadPath } from "./uploads";
 import { readPreview } from "./files";
 import { cleanShortcuts, type Shortcut } from "./shortcuts";
@@ -44,6 +44,8 @@ export interface AppOptions {
   push?: PushApi;
   /** What to show besides the conversation, and from which values (docs/mods.md). */
   display: () => LoadedDisplay;
+  /** Keeps a spec made in the display editor; without it the editor can only look. */
+  saveDisplay?: (spec: DisplaySpec) => void;
   /** Where files a person adds are kept (server/uploads.ts); without it uploads answer 404. */
   uploadsRoot?: string;
   /** The commands kept at hand (server/shortcuts.ts); without it the list is empty and cannot change. */
@@ -154,7 +156,7 @@ function trimScreen(text: string): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function createApp({ backend, machine, distDir, gate, push, display, uploadsRoot, shortcuts }: AppOptions) {
+export function createApp({ backend, machine, distDir, gate, push, display, saveDisplay, uploadsRoot, shortcuts }: AppOptions) {
   function events(req: Request): Response {
     let close = () => {};
     const stream = new ReadableStream<Uint8Array>({
@@ -256,6 +258,14 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
     if (path === "/api/events" && req.method === "GET") return events(req);
     if (path === "/api/push" || path.startsWith("/api/push/")) return pushRoute(req, url, path);
     if (path === "/api/display" && req.method === "GET") return json(200, display());
+    if (path === "/api/display" && req.method === "POST") {
+      if (!saveDisplay) throw new HttpError(404, "no_display_file", "this server keeps no display file");
+      // Saved only whole: a part the checker would drop is refused with its reason instead.
+      const { spec, errors } = cleanSpec((await body(req)).spec);
+      if (errors.length > 0) throw new HttpError(400, "bad_display", errors.join("; "));
+      saveDisplay(spec);
+      return json(200, display());
+    }
     if (path === "/api/shortcuts" && req.method === "GET") return json(200, { shortcuts: shortcuts?.list() ?? [] });
     if (path === "/api/shortcuts" && req.method === "POST") {
       if (!shortcuts) throw new HttpError(404, "no_shortcuts", "this server keeps no shortcuts");
