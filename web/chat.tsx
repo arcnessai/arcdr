@@ -3,6 +3,7 @@ import { api, ApiError, type Agent, type ChatItem, type Menu, type Suggestion } 
 import { agentName, agentSubtitle, STATUS_LABEL } from "./format";
 import * as I from "./icons";
 import { Stage, StatusDot } from "./lists";
+import { ChangeDiff, ChangesTab, changeStats, Stats } from "./changes";
 import { Markdown } from "./markdown";
 import { tokenAt, type Token } from "./token";
 import { t } from "./i18n";
@@ -187,14 +188,22 @@ function LongText({ text, latest }: { text: string; latest: boolean }) {
 function ToolGroup({ tools, failed }: { tools: Tool[]; failed: Set<string> }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<string | null>(null);
-  const errors = tools.filter((t) => failed.has(t.id)).length;
+  const errors = tools.filter((x) => failed.has(x.id)).length;
   const last = tools[tools.length - 1]!;
+  const stats = useMemo(() => {
+    const changed = tools.filter((x) => x.change);
+    if (changed.length === 0) return null;
+    return changed
+      .map((x) => changeStats(x.change!))
+      .reduce((a, b) => ({ added: a.added + b.added, removed: a.removed + b.removed }));
+  }, [tools]);
   return (
     <div class={`tools${open ? " open" : ""}`}>
       <button class="tools-head" onClick={() => setOpen(!open)} aria-expanded={open}>
         <I.Wrench size={14} />
         <span class="tools-count">{t.tools(tools.length)}</span>
         {errors > 0 && <span class="tools-err">{t.failed(errors)}</span>}
+        {stats && <Stats {...stats} />}
         {!open && (
           <span class="tools-last">
             <b>{last.name}</b> {last.summary}
@@ -203,12 +212,14 @@ function ToolGroup({ tools, failed }: { tools: Tool[]; failed: Set<string> }) {
       </button>
       {open && (
         <ul class="tools-list">
-          {tools.map((t) => (
-            <li key={t.id} class={failed.has(t.id) ? "err" : ""}>
-              <button class="tool-line" onClick={() => setDetail(detail === t.id ? null : t.id)}>
-                <b>{t.name}</b> <span>{t.summary}</span>
+          {tools.map((x) => (
+            <li key={x.id} class={failed.has(x.id) ? "err" : ""}>
+              <button class="tool-line" onClick={() => setDetail(detail === x.id ? null : x.id)} aria-expanded={detail === x.id}>
+                <b>{x.name}</b> <span>{x.summary}</span>
+                {x.change && <Stats {...changeStats(x.change)} />}
               </button>
-              {detail === t.id && t.detail && <pre class="tool-detail">{t.detail}</pre>}
+              {detail === x.id &&
+                (x.change ? <ChangeDiff change={x.change} /> : x.detail && <pre class="tool-detail">{x.detail}</pre>)}
             </li>
           ))}
         </ul>
@@ -595,7 +606,7 @@ function Composer(props: { agent: Agent; onSend: (text: string) => Promise<boole
 }
 
 export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
-  const [tab, setTab] = useState<"chat" | "screen">("chat");
+  const [tab, setTab] = useState<"chat" | "changes" | "screen">("chat");
   const [keysOpen, setKeysOpen] = useState(false);
   const [pending, setPending] = useState<Pending[]>([]);
   const [toast, setToast] = useState<string | null>(null);
@@ -606,6 +617,10 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
   const screenEvery = !visible ? null : tab === "screen" || agent.status === "blocked" ? 1000 : 2500;
   const screen = useScreen(pane, screenEvery);
   const rows = useMemo(() => toRows(chat.items), [chat.items]);
+  const changedFiles = useMemo(
+    () => new Set(chat.items.flatMap((i) => (i.kind === "tool" && i.change ? [i.change.path] : []))).size,
+    [chat.items],
+  );
 
   useEffect(() => {
     setPending([]);
@@ -695,6 +710,10 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
         <button role="tab" aria-selected={tab === "chat"} onClick={() => setTab("chat")}>
           {t.tabChat}
         </button>
+        <button role="tab" aria-selected={tab === "changes"} onClick={() => setTab("changes")}>
+          {t.tabChanges}
+          {changedFiles > 0 && <span class="seg-count">{changedFiles}</span>}
+        </button>
         <button role="tab" aria-selected={tab === "screen"} onClick={() => setTab("screen")}>
           {t.tabScreen}
         </button>
@@ -710,6 +729,10 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
           state={chat.state}
           clipped={chat.clipped}
         />
+      ) : tab === "changes" ? (
+        <div class="messages">
+          <ChangesTab items={chat.items} cwd={agent.cwd} />
+        </div>
       ) : (
         <ScreenPane text={screen.text} />
       )}

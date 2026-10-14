@@ -9,7 +9,7 @@ import { basename, join } from "node:path";
 export type ChatItem =
   | { id: string; kind: "user"; text: string; at: string | null }
   | { id: string; kind: "assistant"; text: string; at: string | null }
-  | { id: string; kind: "tool"; name: string; summary: string; detail: string; at: string | null }
+  | { id: string; kind: "tool"; name: string; summary: string; detail: string; change?: FileChange; at: string | null }
   | { id: string; kind: "ask"; questions: AskQuestion[]; at: string | null }
   /** code names a note the screen words itself, in its own language. */
   | { id: string; kind: "note"; text: string; code?: "compacted"; at: string | null }
@@ -21,6 +21,16 @@ export type ChatItem =
    * queue the same way, so they are kept (hidden) to keep the order of takes right.
    */
   | { id: string; kind: "queue"; op: "add" | "remove" | "take"; text: string; hidden: boolean };
+
+/** What an Edit, MultiEdit, Write or NotebookEdit call did to a file, as before/after text pairs. */
+export interface FileChange {
+  path: string;
+  edits: { old: string; new: string }[];
+  /** Write: the file's whole new content, so everything in it is added. */
+  created: boolean;
+  /** Some text was cut to keep the response small. */
+  clipped: boolean;
+}
 
 export interface AskQuestion {
   question: string;
@@ -60,6 +70,7 @@ export function toolSummary(name: string, input: Json): { label: string; summary
     case "Read":
     case "Write":
     case "Edit":
+    case "MultiEdit":
     case "NotebookEdit":
       summary = shortPath(s("file_path") || s("notebook_path"));
       detail = s("file_path") || s("notebook_path");
@@ -88,6 +99,32 @@ export function toolSummary(name: string, input: Json): { label: string; summary
       detail = clip(JSON.stringify(input, null, 2), 1500);
   }
   return { label, summary: clip(firstLine(summary), 160), detail: clip(detail, 4000) };
+}
+
+const CHANGE_TEXT_MAX = 30_000;
+
+export function fileChange(name: string, input: Json): FileChange | undefined {
+  const raw: { old: string; new: string }[] = [];
+  let path = str(input.file_path);
+  let created = false;
+  if (name === "Edit") raw.push({ old: str(input.old_string), new: str(input.new_string) });
+  else if (name === "MultiEdit")
+    for (const e of arr(input.edits).map(obj)) raw.push({ old: str(e.old_string), new: str(e.new_string) });
+  else if (name === "Write") {
+    raw.push({ old: "", new: str(input.content) });
+    created = true;
+  } else if (name === "NotebookEdit") {
+    path = str(input.notebook_path);
+    raw.push({ old: "", new: str(input.new_source) });
+  } else return undefined;
+  if (!path) return undefined;
+  let clipped = false;
+  const cut = (s: string) => {
+    if (s.length <= CHANGE_TEXT_MAX) return s;
+    clipped = true;
+    return s.slice(0, CHANGE_TEXT_MAX);
+  };
+  return { path, edits: raw.map((e) => ({ old: cut(e.old), new: cut(e.new) })), created, clipped };
 }
 
 const DROP_USER = /^<(task-notification|system-reminder|local-command-caveat)>/;
@@ -226,7 +263,16 @@ export function parseEntries(lines: string[]): ChatItem[] {
               items.push({ id: toolId, kind: "assistant", text: str(input.plan), at });
             } else {
               const t = toolSummary(name, input);
-              items.push({ id: toolId, kind: "tool", name: t.label, summary: t.summary, detail: t.detail, at });
+              const change = fileChange(name, input);
+              items.push({
+                id: toolId,
+                kind: "tool",
+                name: t.label,
+                summary: t.summary,
+                detail: t.detail,
+                ...(change && { change }),
+                at,
+              });
             }
           }
         });

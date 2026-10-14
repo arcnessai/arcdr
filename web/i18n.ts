@@ -64,6 +64,11 @@ const en = {
   notifyUnavailable: "This server does not send notifications.",
   connection: "Connection",
   openConnect: "Connection screen",
+  tabChanges: "Changes",
+  noChanges: "No file changes in the loaded part of this conversation.",
+  newFile: "new",
+  unchangedLines: (n: number) => `⋯ ${n} unchanged line${n === 1 ? "" : "s"}`,
+  changeClipped: "Too long — only the first part is shown.",
 };
 
 type Strings = typeof en;
@@ -132,6 +137,11 @@ const ko: Strings = {
   notifyUnavailable: "이 서버는 알림을 보내지 않습니다.",
   connection: "연결",
   openConnect: "연결 화면",
+  tabChanges: "변경",
+  noChanges: "불러온 대화에서 고친 파일이 없습니다.",
+  newFile: "새 파일",
+  unchangedLines: (n) => `⋯ 그대로인 줄 ${n}개`,
+  changeClipped: "너무 길어서 앞부분만 보입니다.",
 };
 
 const ja: Strings = {
@@ -198,6 +208,11 @@ const ja: Strings = {
   notifyUnavailable: "このサーバーは通知を送りません。",
   connection: "接続",
   openConnect: "接続画面",
+  tabChanges: "変更",
+  noChanges: "読み込んだ会話にはファイルの変更がありません。",
+  newFile: "新規",
+  unchangedLines: (n) => `⋯ 変更のない行 ${n} 行`,
+  changeClipped: "長すぎるため先頭だけ表示しています。",
 };
 
 const zh: Strings = {
@@ -264,6 +279,11 @@ const zh: Strings = {
   notifyUnavailable: "此服务器不发送通知。",
   connection: "连接",
   openConnect: "连接页面",
+  tabChanges: "更改",
+  noChanges: "已加载的对话中没有文件更改。",
+  newFile: "新文件",
+  unchangedLines: (n) => `⋯ ${n} 行未更改`,
+  changeClipped: "内容太长，只显示前面一部分。",
 };
 
 /** Each language under its own name, the way a person looks for theirs in a list. */

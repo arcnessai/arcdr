@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { appendFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { askAnswers, findTranscript, parseEntries, readFrom, readTail, userText } from "./transcript";
+import { askAnswers, fileChange, findTranscript, parseEntries, readFrom, readTail, userText } from "./transcript";
 
 const line = (o: unknown) => JSON.stringify(o);
 
@@ -188,5 +188,38 @@ describe("queue operations", () => {
       ["remove", "이것도 봐줘", false],
       ["take", "", false],
     ]);
+  });
+});
+
+describe("fileChange", () => {
+  test("an Edit is one before/after pair, a MultiEdit several, a Write a new file", () => {
+    expect(fileChange("Edit", { file_path: "/p/a.ts", old_string: "x", new_string: "y" })).toEqual({
+      path: "/p/a.ts",
+      edits: [{ old: "x", new: "y" }],
+      created: false,
+      clipped: false,
+    });
+    expect(
+      fileChange("MultiEdit", {
+        file_path: "/p/a.ts",
+        edits: [
+          { old_string: "1", new_string: "2" },
+          { old_string: "3", new_string: "4" },
+        ],
+      })?.edits,
+    ).toHaveLength(2);
+    expect(fileChange("Write", { file_path: "/p/new.md", content: "hello" })).toMatchObject({
+      created: true,
+      edits: [{ old: "", new: "hello" }],
+    });
+  });
+  test("other tools change no file", () => {
+    expect(fileChange("Bash", { command: "rm x" })).toBeUndefined();
+    expect(fileChange("Edit", { old_string: "x" })).toBeUndefined();
+  });
+  test("very long text is cut and says so", () => {
+    const c = fileChange("Write", { file_path: "/p/big", content: "x".repeat(40_000) })!;
+    expect(c.clipped).toBe(true);
+    expect(c.edits[0]!.new.length).toBe(30_000);
   });
 });
