@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Verdict } from "./access";
 import { filterSlash, type Suggestion } from "./complete";
+import { SESSION_ID, type PastSession } from "./sessions";
 import type { LoadedDisplay } from "./spec";
 import { contentTypeOf, MAX_UPLOAD_BYTES, saveUpload, uploadPath } from "./uploads";
 import { validEndpoint, type PushSubscriptionRecord } from "./push";
@@ -24,6 +25,11 @@ export interface Backend {
   /** The transcript from offset when `file` still names the agent's session, else its tail; null when there is none. */
   transcript(agent: Agent, offset: number, file: string | null): Chunk | null;
   complete(agent: Agent, kind: "slash" | "file", query: string): Suggestion[];
+  /** Conversations in cwd that `claude --resume` can open, newest first, leaving out the ones open now. */
+  pastSessions(cwd: string, open: Set<string>): PastSession[];
+  /** A new tab in the space with Claude Code started in cwd (resuming a conversation if named); answers its pane. */
+  startSession(space: string, cwd: string, label: string | null, resume: string | null): Promise<string>;
+  closePane(pane: string): Promise<void>;
 }
 
 export interface AppOptions {
@@ -89,6 +95,9 @@ const ALLOWED_KEYS = new Set([
   "7",
   "8",
   "9",
+  // Ctrl+X Ctrl+S: send the queued messages now.
+  "ctrl+x",
+  "ctrl+s",
 ]);
 
 /** agent.prompt errors after which nothing was sent, so typing the text instead cannot send it twice. */
@@ -226,7 +235,7 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
     return agent;
   }
 
-  async function api(req: Request, url: URL, login: string): Promise<Response> {
+  async function api(req: Request, url: URL, login: string, keepOpen: (req: Request) => void): Promise<Response> {
     const path = url.pathname;
 
     if (path === "/api/health" && req.method === "GET") {
@@ -236,6 +245,36 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
     if (path === "/api/events" && req.method === "GET") return events(req);
     if (path === "/api/push" || path.startsWith("/api/push/")) return pushRoute(req, url, path);
     if (path === "/api/display" && req.method === "GET") return json(200, display());
+    if (path === "/api/sessions/past" && req.method === "GET") {
+      const cwd = url.searchParams.get("cwd") ?? "";
+      if (!cwd.startsWith("/") || cwd.length > 1000) throw new HttpError(400, "bad_cwd", "cwd must be an absolute path");
+      const open = new Set((await backend.snapshot()).agents.flatMap((a) => (a.sessionId ? [a.sessionId] : [])));
+      return json(200, { sessions: backend.pastSessions(cwd, open) });
+    }
+    if (path === "/api/sessions" && req.method === "POST") {
+      keepOpen(req);
+      const b = await body(req);
+      const snap = await backend.snapshot();
+      const space = typeof b.space === "string" ? b.space : "";
+      if (!snap.spaces.some((s) => s.id === space)) throw new HttpError(404, "no_space", "no such space");
+      const cwd = typeof b.cwd === "string" ? b.cwd : "";
+      if (!cwd.startsWith("/") || cwd.length > 1000) throw new HttpError(400, "bad_cwd", "cwd must be an absolute path");
+      const label = typeof b.label === "string" && b.label.trim() ? b.label.trim().slice(0, 80) : null;
+      const resume = typeof b.resume === "string" && b.resume ? b.resume : null;
+      if (resume && !SESSION_ID.test(resume)) throw new HttpError(400, "bad_resume", "not a session id");
+      const pane = await backend.startSession(space, cwd, label, resume);
+      // A first message goes in once Claude Code takes input; a dialog it opens first (folder trust) waits for the person.
+      let sent = false;
+      if (typeof b.prompt === "string" && b.prompt.trim()) {
+        try {
+          await backend.prompt(pane, b.prompt.slice(0, MAX_TEXT));
+          sent = true;
+        } catch {
+          /* the person sends it from the chat once the dialog is answered */
+        }
+      }
+      return json(200, { pane, sent });
+    }
     const upload = /^\/api\/uploads\/([^/]+)\/([^/]+)$/.exec(path);
     if (upload && req.method === "GET") {
       const file = uploadsRoot ? uploadPath(uploadsRoot, upload[1]!, upload[2]!) : null;
@@ -249,7 +288,7 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
       });
     }
 
-    const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose|upload)$/.exec(path);
+    const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose|upload|close)$/.exec(path);
     if (!m) throw new HttpError(404, "not_found", "no such route");
     const pane = decodeURIComponent(m[1]!);
     if (!/^[\w-]+:[\w-]+$/.test(pane)) throw new HttpError(400, "bad_pane", "malformed pane id");
@@ -310,6 +349,11 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
     if (req.method !== "POST") throw new HttpError(405, "method", "method not allowed");
     const b = await body(req);
 
+    if (action === "close") {
+      await backend.closePane(pane);
+      return json(200, { ok: true });
+    }
+
     if (action === "send") {
       const text = textField(b, "text");
       try {
@@ -350,7 +394,7 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
       }
       // Read the screen again right before acting: the button was drawn from an earlier read,
       // and moving the cursor on a menu that has since changed would pick something else.
-      if (agent.status !== "blocked") throw new HttpError(409, "no_menu", "the agent is not waiting for an answer");
+      if (agent.status === "working") throw new HttpError(409, "no_menu", "the agent is working, not waiting for an answer");
       const menu = parseMenu(await backend.readScreen(pane));
       if (!menu) throw new HttpError(409, "no_menu", "the agent is no longer showing a menu");
       const choice = menu.choices.find((c) => c.n === n);
@@ -390,14 +434,14 @@ export function createApp({ backend, machine, distDir, gate, push, display, uplo
     try {
       if (url.pathname.startsWith("/api/")) {
         if (url.pathname === "/api/events") keepOpen(req);
-        return await api(req, url, verdict.login);
+        return await api(req, url, verdict.login, keepOpen);
       }
       if (req.method !== "GET" && req.method !== "HEAD") return json(405, { code: "method", message: "method not allowed" });
       return await staticFile(url);
     } catch (e) {
       if (e instanceof HttpError) return json(e.status, { code: e.code, message: e.message });
       if (e instanceof HerdrError) {
-        const status = e.code === "agent_blocked" ? 409 : e.code === "pane_not_found" ? 404 : 502;
+        const status = e.code === "agent_blocked" ? 409 : e.code === "pane_not_found" ? 404 : e.code.startsWith("bad_") ? 400 : 502;
         return json(status, { code: e.code, message: e.message });
       }
       console.error(e);

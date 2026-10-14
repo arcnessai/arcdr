@@ -170,3 +170,29 @@ export async function sendKeys(socketPath: string, pane: string, keys: string[])
 export async function sendInput(socketPath: string, pane: string, text: string, keys: string[]): Promise<void> {
   await call(socketPath, "pane.send_input", { pane_id: pane, text, keys });
 }
+
+/** A new tab in a space, its shell started in cwd; answers the tab's pane. */
+export async function createTab(socketPath: string, space: string, cwd: string, label: string | null): Promise<string> {
+  const r = await call<{ root_pane?: { pane_id?: string }; tab?: { root_pane_id?: string; tab_id?: string } }>(
+    socketPath,
+    "tab.create",
+    { workspace_id: space, cwd, label, focus: false },
+  );
+  const pane = r.root_pane?.pane_id ?? r.tab?.root_pane_id;
+  if (!pane) throw new HerdrError("bad_reply", "tab.create answered no pane");
+  return pane;
+}
+
+/** Starts Claude Code at the pane's shell prompt and waits until herdr sees it ready for input. */
+export async function startClaude(socketPath: string, pane: string, args: string[]): Promise<void> {
+  await call(
+    socketPath,
+    "agent.start",
+    { name: `arcdr-${Date.now().toString(36)}`, kind: "claude", pane_id: pane, args, timeout_ms: 90_000 },
+    95_000,
+  );
+}
+
+export async function closePane(socketPath: string, pane: string): Promise<void> {
+  await call(socketPath, "pane.close", { pane_id: pane });
+}

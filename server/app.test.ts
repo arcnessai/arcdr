@@ -36,6 +36,9 @@ function setup() {
     sendKeys: async (_pane, k) => void keys.push(k),
     transcript: () => null,
     complete: () => [],
+    pastSessions: () => [],
+    startSession: async () => "w1:p9",
+    closePane: async () => {},
   };
   const handle = createApp({
     backend,

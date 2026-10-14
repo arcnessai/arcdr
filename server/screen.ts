@@ -63,6 +63,51 @@ function asOption(line: string, index: number): OptionLine | null {
 }
 
 export function parseMenu(screen: string): Menu | null {
+  const numbered = parseNumbered(screen);
+  return numbered ?? parseUnnumbered(screen);
+}
+
+const HINT = /^\s*(Enter to (confirm|select|continue)|↑\/↓|Esc to (cancel|go back))/;
+
+/**
+ * A menu without numbers, like the folder trust dialog at a new session's start ("❯ No, exit / Yes, I trust
+ * this folder", then "Enter to confirm · Esc to cancel"). The cursor line and its siblings share one indent,
+ * and a hint line follows them — the prompt line, which also starts with ❯, has no such hint under it.
+ */
+function parseUnnumbered(screen: string): Menu | null {
+  const lines = screen.split("\n").map(clean);
+  const hintAt = lines.findLastIndex((l) => HINT.test(l));
+  if (hintAt < 0) return null;
+  let end = hintAt - 1;
+  while (end >= 0 && lines[end]!.trim() === "") end--;
+  const options: { label: string; cursor: boolean }[] = [];
+  let indent = -1;
+  for (let i = end; i >= 0; i--) {
+    const m = /^(\s*)(?:([❯›▶➤>])\s+)?(\S.*)$/.exec(lines[i]!);
+    if (!m) break;
+    const marker = Boolean(m[2]);
+    // The cursor's marker stands where its siblings have spaces, so compare where the label starts.
+    const at = lines[i]!.indexOf(m[3]!);
+    if (indent < 0) indent = at;
+    if (at !== indent) break;
+    options.unshift({ label: m[3]!.trim(), cursor: marker });
+  }
+  const cursor = options.findIndex((o) => o.cursor);
+  if (options.length < 2 || options.length > 9 || cursor < 0 || options.filter((o) => o.cursor).length !== 1) return null;
+  const first = end - options.length + 1;
+  const context: string[] = [];
+  for (let i = first - 1; i >= 0 && context.length < 10; i--) {
+    const line = lines[i]!;
+    if (isRule(line)) break;
+    if (line.trim() === "" && context.length > 0 && context[0] === "") continue;
+    context.unshift(line.trim() === "" ? "" : line.trim().slice(0, 240));
+  }
+  while (context[0] === "") context.shift();
+  while (context[context.length - 1] === "") context.pop();
+  return { context, choices: options.map((o, i) => ({ n: i + 1, label: o.label, detail: [], checked: null })), cursor };
+}
+
+function parseNumbered(screen: string): Menu | null {
   const lines = screen.split("\n").map(clean);
 
   let last = -1;
@@ -139,7 +184,7 @@ export function parseMenu(screen: string): Menu | null {
   return { context, choices, cursor };
 }
 
-/** Keys that move the cursor from where the menu shows it to option n and confirm it. */
+/** Keys that move the cursor from where the menu shows it to option n and confirm it. Unnumbered menus count from 1. */
 export function keysToChoose(menu: Menu, n: number): string[] | null {
   const target = menu.choices.findIndex((c) => c.n === n);
   if (target < 0) return null;

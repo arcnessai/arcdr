@@ -7,6 +7,7 @@ import { ChatView } from "./chat";
 import { ConnectView, type Conn } from "./connect";
 import { counts } from "./format";
 import * as I from "./icons";
+import { NewSessionView } from "./newsession";
 import { SettingsView } from "./settings";
 import { AgentList, SpaceCard, SpaceRow, Summary } from "./lists";
 import { t } from "./i18n";
@@ -16,6 +17,7 @@ type Route =
   | { name: "spaces" }
   | { name: "settings" }
   | { name: "space"; space: string }
+  | { name: "new"; space: string }
   | { name: "agent"; pane: string };
 
 function parseRoute(hash: string): Route {
@@ -23,6 +25,7 @@ function parseRoute(hash: string): Route {
   if (parts[0] === "spaces") return { name: "spaces" };
   if (parts[0] === "settings") return { name: "settings" };
   if (parts[0] === "s" && parts[1]) return { name: "space", space: parts[1] };
+  if (parts[0] === "new" && parts[1]) return { name: "new", space: parts[1] };
   if (parts[0] === "a" && parts[1]) return { name: "agent", pane: parts[1] };
   return { name: "connect" };
 }
@@ -186,7 +189,7 @@ function Screens() {
   }, [firstSpace]);
 
   const agent = route.name === "agent" ? (snap?.agents.find((a) => a.pane === route.pane) ?? null) : null;
-  const spaceId = route.name === "space" ? route.space : agent ? agent.space : firstSpace;
+  const spaceId = route.name === "space" || route.name === "new" ? route.space : agent ? agent.space : firstSpace;
   const space = snap?.spaces.find((s) => s.id === spaceId) ?? null;
   const spaceAgents = useMemo(() => snap?.agents.filter((a) => a.space === spaceId) ?? [], [snap, spaceId]);
 
@@ -240,8 +243,18 @@ function Screens() {
               <SpaceRow key={s.id} space={s} agents={snap.agents.filter((a) => a.space === s.id)} selected={s.id === spaceId} />
             ))}
           </nav>
-          <p class="side-label">
-            {t.agents} <span class="side-count">{spaceAgents.length}</span>
+          <p class="side-label side-label-row">
+            <span>
+              {t.agents} <span class="side-count">{spaceAgents.length}</span>
+            </span>
+            <a
+              class="icon-btn small"
+              href={`#/new/${encodeURIComponent(spaceId)}`}
+              aria-label={t.newSession}
+              title={t.newSession}
+            >
+              <I.Plus size={16} />
+            </a>
           </p>
           <AgentList agents={spaceAgents} selected={agent?.pane ?? null} />
         </aside>
@@ -250,6 +263,10 @@ function Screens() {
           {route.name === "settings" ? (
             <div class="scroll">
               <SettingsView health={health} />
+            </div>
+          ) : route.name === "new" && space ? (
+            <div class="scroll">
+              <NewSessionView space={space} agents={spaceAgents} />
             </div>
           ) : agent ? (
             <ChatView agent={agent} wide />
@@ -278,6 +295,17 @@ function Screens() {
     );
   }
 
+  if (route.name === "new" && space) {
+    return (
+      <div class="screen-wrap">
+        <TopBar title={t.newSession} back={`#/s/${encodeURIComponent(space.id)}`} machine={space.label} />
+        <div class="scroll">
+          <NewSessionView space={space} agents={spaceAgents} />
+        </div>
+      </div>
+    );
+  }
+
   if (route.name === "agent") {
     return (
       <div class="screen-wrap">
@@ -292,6 +320,9 @@ function Screens() {
       <div class="screen-wrap">
         <TopBar title={space.label} back="#/spaces" machine={health?.machine ?? machine}>
           <Summary c={counts(spaceAgents)} compact />
+          <a class="icon-btn" href={`#/new/${encodeURIComponent(space.id)}`} aria-label={t.newSession}>
+            <I.Plus />
+          </a>
         </TopBar>
         {banner}
         <div class="scroll">

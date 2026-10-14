@@ -742,7 +742,7 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
   const pane = agent.pane;
 
   const chat = useChat(pane, visible);
-  const screenEvery = !visible ? null : tab === "screen" || agent.status === "blocked" ? 1000 : 2500;
+  const screenEvery = !visible ? null : tab === "screen" || agent.status !== "working" ? 1000 : 2500;
   const screen = useScreen(pane, screenEvery);
   const rows = useMemo(() => toRows(chat.items), [chat.items]);
   const changedFiles = useMemo(
@@ -803,9 +803,9 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
   };
 
   const spec = useDisplay();
-  // herdr marks an agent blocked when it recognises an approval or question UI; a menu-shaped
-  // screen without that is old output, so no buttons for it.
-  const showMenu = screen.menu !== null && agent.status === "blocked";
+  // A menu-shaped screen while the agent works is output scrolling by, not a question. herdr marks an
+  // approval or question UI blocked, but a dialog it does not know (folder trust) leaves the status unknown.
+  const showMenu = screen.menu !== null && agent.status !== "working";
   const [busy, setBusy] = useState<number | null>(null);
   const choose = async (n: number, label: string) => {
     setBusy(n);
@@ -835,6 +835,7 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
           </p>
           <AgentLine agent={agent} class="chat-sub" />
         </div>
+        <ActionsMenu agent={agent} queued={chat.queue.length} onError={setToast} />
         <span class={`status-pill st-${agent.status}`}>
           <StatusDot status={agent.status} />
           {STATUS_LABEL[agent.status]}
@@ -888,6 +889,67 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
         {spec.footer && <PartRow row={spec.footer} of={agent} />}
       </div>
     </section>
+  );
+}
+
+/** What the terminal offers besides typing — keys and commands with a name, and closing the session. */
+function ActionsMenu({ agent, queued, onError }: { agent: Agent; queued: number; onError: (m: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const pane = agent.pane;
+  const run = async (work: () => Promise<unknown>) => {
+    setOpen(false);
+    navigator.vibrate?.(8);
+    try {
+      await work();
+    } catch (e) {
+      onError(e instanceof ApiError ? e.message : String(e));
+    }
+  };
+  const keys = (k: string[]) => run(() => api.keys(pane, k));
+  const say = (text: string) => run(() => api.send(pane, text));
+  const items: { label: string; act: () => void; danger?: boolean; show?: boolean }[] = [
+    { label: t.interrupt, act: () => keys(["esc"]), show: agent.status === "working" },
+    { label: t.sendQueued, act: () => keys(["ctrl+x", "ctrl+s"]), show: queued > 0 },
+    { label: t.cycleMode, act: () => keys(["shift+tab"]) },
+    { label: t.compact, act: () => say("/compact") },
+    { label: t.showContext, act: () => say("/context") },
+    { label: t.showUsage, act: () => say("/usage") },
+    { label: t.pickModel, act: () => say("/model") },
+    { label: t.rewind, act: () => keys(["esc", "esc"]) },
+    { label: t.clearChat, act: () => confirm(t.confirmClear) && say("/clear") },
+    {
+      label: t.closeSession,
+      danger: true,
+      act: () =>
+        confirm(t.confirmClose) &&
+        run(async () => {
+          await api.close(pane);
+          location.hash = `#/s/${encodeURIComponent(agent.space)}`;
+        }),
+    },
+  ];
+  return (
+    <div class="actions">
+      <button class="icon-btn" aria-label={t.actions} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <I.More />
+      </button>
+      {open && (
+        <>
+          <div class="actions-scrim" onClick={() => setOpen(false)} />
+          <ul class="actions-menu" role="menu">
+            {items
+              .filter((i) => i.show !== false)
+              .map((i) => (
+                <li key={i.label}>
+                  <button role="menuitem" class={i.danger ? "danger" : ""} onClick={i.act}>
+                    {i.label}
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }
 

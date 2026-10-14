@@ -86,6 +86,26 @@ describe("parseMenu", () => {
     expect(m.context).toEqual(["☐ Next unit", "", "Which row should open next?"]);
   });
 
+  test("reads the folder trust dialog, which numbers nothing", () => {
+    const screen = [
+      " /tmp/new-project",
+      " Quick safety check: Is this a project you created or one you trust?",
+      " Claude Code'll be able to read, edit, and execute files here.",
+      " Security guide",
+      " ❯ No, exit",
+      "   Yes, I trust this folder",
+      " Enter to confirm · Esc to cancel",
+    ].join("\n");
+    const m = parseMenu(screen)!;
+    expect(m.choices.map((c) => c.label)).toEqual(["No, exit", "Yes, I trust this folder"]);
+    expect(m.cursor).toBe(0);
+    expect(keysToChoose(m, 2)).toEqual(["down", "enter"]);
+  });
+
+  test("the prompt line's ❯ with no hint under it is not a menu", () => {
+    expect(parseMenu("● Done.\n❯ \n  ⏵⏵ accept edits on (shift+tab to cycle)\n")).toBeNull();
+  });
+
   test("reads ticked and unticked boxes of a multi-select menu", () => {
     const m = parseMenu("Pick some\n❯ 1. [✔] Alpha\n  2. [ ] Beta\n")!;
     expect(m.choices.map((c) => [c.label, c.checked])).toEqual([

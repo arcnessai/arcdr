@@ -81,6 +81,9 @@ export const api = {
   pushRemove: (endpoint: string) => post("/api/push/remove", { endpoint }),
   pushTest: (endpoint: string) => post("/api/push/test", { endpoint }),
   display: () => request<LoadedDisplay>("/api/display"),
+  startSession: (b: { space: string; cwd: string; label: string; prompt: string; resume: string | null }) =>
+    request<{ pane: string; sent: boolean }>("/api/sessions", { method: "POST", body: JSON.stringify(b) }, 120_000),
+  close: (pane: string) => post(agentPath(pane, "close"), {}),
   /** Sends a file's bytes as they are; the server names and keeps it, and answers where. */
   upload: async (pane: string, file: Blob, name: string): Promise<{ path: string; url: string }> => {
     const res = await fetch(agentPath(pane, "upload"), {
