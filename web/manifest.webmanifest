@@ -1,0 +1,17 @@
+{
+  "name": "herdr remote",
+  "short_name": "herdr",
+  "description": "herdr 에이전트를 폰과 다른 PC 에서 보고 답하기",
+  "lang": "ko",
+  "start_url": "/#/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#121318",
+  "theme_color": "#121318",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
