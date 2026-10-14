@@ -1,11 +1,12 @@
+# Template: scripts/setup.sh fills the @…@ values and installs it as ~/.config/systemd/user/arcdr.service.
 [Unit]
 Description=arcdr — herdr agents on your phone and in the browser
 
 [Service]
-WorkingDirectory=%h/arcdr
-EnvironmentFile=%h/.config/arcdr/env
-Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=%h/.local/bin/bun run server/main.ts
+WorkingDirectory=@ROOT@
+EnvironmentFile=@ENV_FILE@
+Environment=PATH=@PATH@
+ExecStart=@BUN@ run server/main.ts
 Restart=on-failure
 RestartSec=3
 

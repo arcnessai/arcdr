@@ -35,24 +35,25 @@ herdr 에서 돌고 있는 에이전트들을 폰이나 다른 PC 의 브라우�
 
 ## 설치
 
+이 저장소를 받은 폴더에서 Claude Code 를 열고 「arcdr 설치해줘」라고 하면 `arcdr-setup` 스킬이 아래를 대신 돌린다.
+직접 할 때는:
+
 ```bash
-cd ~/arcdr
-bun install --frozen-lockfile
-bun run build
-mkdir -p ~/.config/arcdr && cp deploy/env.example ~/.config/arcdr/env   # 값을 채운다
-cp deploy/arcdr.service ~/.config/systemd/user/
-systemctl --user daemon-reload && systemctl --user enable --now arcdr
-tailscale serve --bg --https=443 http://127.0.0.2:7420
+scripts/setup.sh status   # 무엇이 됐고 무엇이 남았는지
+scripts/setup.sh all      # 남은 단계를 차례로 — 이미 된 단계는 건너뛴다
 ```
 
-폰에서는 Chrome 으로 `https://<기기>.<tailnet>.ts.net` 을 열고, 메뉴에서 「앱 설치」를 누른다.
+사람이 해야 하는 단계(Tailscale 로그인, tailnet HTTPS 켜기)에서는 주소를 보여 주고 종료 코드 10 으로 멈춘다.
+그 주소에서 하고 나서 다시 돌리면 이어서 간다. 지우기는 `scripts/setup.sh uninstall`(`--purge` 는 설정까지).
+
+폰에서는 Tailscale 앱을 같은 계정으로 켜고, Chrome 으로 `https://<기기>.<tailnet>.ts.net` 을 연 다음 메뉴에서 「앱 설치」를 누른다.
 
 ## 개발
 
 ```bash
 bun test            # 접근 판단 · 메뉴 읽기 · 대화 기록 · 마크다운
 bun run typecheck
-bun run build && systemctl --user restart arcdr
+scripts/setup.sh build && scripts/setup.sh service
 ```
 
 입력 쪽을 시험할 때는 쓰고 있는 세션 말고 `herdr --session <이름> server` 로 따로 띄운 세션을 쓴다. 서버를 그 세션에 붙이려면 `HERDR_SOCKET_PATH` 를 넘긴다.
