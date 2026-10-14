@@ -12,6 +12,7 @@
 [![Tailscale](https://img.shields.io/badge/Tailscale-tailnet%20only-5b97e8?style=flat-square)](https://tailscale.com)
 [![PWA](https://img.shields.io/badge/PWA-installable-ff79c6?style=flat-square)](#폰에-설치하기)
 [![Bun](https://img.shields.io/badge/Bun-1.4-f2a65e?style=flat-square)](https://bun.sh)
+[![License: MIT](https://img.shields.io/badge/license-MIT-50fa7b?style=flat-square)](LICENSE)
 
 [English](README.md) · **한국어**
 
@@ -194,4 +195,4 @@ scripts/setup.sh build && scripts/setup.sh service   # 고친 뒤 다시 빌드�
 
 ## 라이선스
 
-아직 정하지 않았다.
+[MIT](LICENSE) © 2026 Arcness

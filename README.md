@@ -12,6 +12,7 @@ and keep it moving — from your phone or any other computer, over your own Tail
 [![Tailscale](https://img.shields.io/badge/Tailscale-tailnet%20only-5b97e8?style=flat-square)](https://tailscale.com)
 [![PWA](https://img.shields.io/badge/PWA-installable-ff79c6?style=flat-square)](#install-it-on-the-phone)
 [![Bun](https://img.shields.io/badge/Bun-1.4-f2a65e?style=flat-square)](https://bun.sh)
+[![License: MIT](https://img.shields.io/badge/license-MIT-50fa7b?style=flat-square)](LICENSE)
 
 **English** · [한국어](README.ko.md)
 
@@ -197,4 +198,4 @@ To test input, use a separate herdr session (`herdr --session test server`), nev
 
 ## License
 
-Not chosen yet.
+[MIT](LICENSE) © 2026 Arcness
