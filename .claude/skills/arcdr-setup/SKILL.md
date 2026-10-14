@@ -48,7 +48,11 @@ into Claude Code; new sessions load it). More values, other places, phone notifi
 - **Port 443 already taken** (`https` stops with "already serves"). Offer `ARCDR_HTTPS_PORT=8443` and fix
   `ARCDR_PUBLIC_HOSTS` to `<machine>.<tailnet>.ts.net:8443`; never turn the other mapping off.
 - **A machine they log out of** (a server, not WSL or a desktop): `service` prints the `loginctl enable-linger`
-  command. It needs root and changes how their account runs; ask before suggesting they run it.
+  command. It needs root and changes how their account runs; ask before suggesting they run it. On WSL the step
+  turns it on itself — without it arcdr does not come back after Windows restarts.
+- **Starting with Windows.** WSL itself starts only when something opens it (a terminal, herdr). If they want
+  arcdr reachable after a restart before they open anything, that is a Windows scheduled task at logon running
+  `wsl.exe -d <distro> --exec true`; offer it, and set it up only on a yes.
 - **Installing Tailscale or Bun** when the person only asked for status. Report; install on a yes.
 
 ## Never
@@ -69,6 +73,7 @@ into Claude Code; new sessions load it). More values, other places, phone notifi
 | 403 "no Tailscale identity" | Opened by IP or `localhost`, not the tailnet name | Use the `https://…ts.net` address |
 | 403 "… is not allowed here" | Another Tailscale account | Log the phone in with the owner's account — or the person adds that login |
 | 421 "unexpected host" | `ARCDR_PUBLIC_HOSTS` does not match the address used | Fix it (with `:port` when not 443), `systemctl --user restart arcdr` |
+| Nothing answers after the computer restarted; `systemctl --user` says "Failed to connect to bus" | No user manager: opening a WSL terminal starts no login session | `scripts/setup.sh service` turns linger on (on WSL it does so itself); `status` shows it |
 | Service will not stay up | Read `journalctl --user -u arcdr -n 30` | Usually a missing config value or a port already in use |
 
 Server log: `journalctl --user -u arcdr -f`. Every refused request is logged with its reason.

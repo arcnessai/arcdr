@@ -29,6 +29,7 @@ die() { printf '\nerror: %s\n' "$*" >&2; exit 1; }
 person() { printf '\n→ %s\n' "$*"; exit "$NEEDS_PERSON"; }
 as_root() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo -n "$@" 2>/dev/null || return 99; fi; }
 is_wsl() { grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; }
+lingers() { loginctl show-user "$(id -un)" -p Linger --value 2>/dev/null || echo no; }
 
 env_get() { [ -f "$ENV_FILE" ] && sed -n "s/^$1=//p" "$ENV_FILE" | tail -1 || true; }
 bind_host() { local v; v="$(env_get ARCDR_HOST)"; echo "${v:-127.0.0.2}"; }
@@ -207,8 +208,15 @@ step_service() {
     die "the service did not stay up"
   }
   ok "running on $(backend)"
-  if ! is_wsl && [ "$(loginctl show-user "$USER" -p Linger --value 2>/dev/null)" != yes ]; then
-    note "on a machine you log out of, keep it running with: sudo loginctl enable-linger $USER"
+  if [ "$(lingers)" != yes ]; then
+    if is_wsl; then
+      # Opening a WSL terminal starts no login session, so without linger the user manager — and arcdr with
+      # it — does not come back after Windows restarts. Measured 2026-10-15.
+      as_root loginctl enable-linger "$(id -un)" && ok "starts with WSL (linger on)" ||
+        note "to start with WSL after a restart, run: sudo loginctl enable-linger $(id -un)"
+    else
+      note "on a machine you log out of, keep it running with: sudo loginctl enable-linger $(id -un)"
+    fi
   fi
 }
 
@@ -248,6 +256,7 @@ step_status() {
   [ -d "$ROOT/dist" ] && ok "built" || no "not built"
   [ -f "$ENV_FILE" ] && ok "config $ENV_FILE" || no "no config"
   systemctl --user is-active --quiet arcdr.service 2>/dev/null && ok "service running" || no "service not running"
+  [ "$(lingers)" = yes ] && ok "starts at boot (linger on)" || no "does not start at boot (linger off): scripts/setup.sh service"
   [ "$(served_target)" = "$(backend)" ] && ok "https://$(public_host)" || no "no tailnet address"
   command -v claude >/dev/null && mod_installed && ok "starter mod arcdr-report" || note "starter mod arcdr-report not installed (optional: scripts/setup.sh mod)"
 }
