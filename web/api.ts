@@ -2,7 +2,7 @@ import type { Agent, AgentStatus, Snapshot, Space } from "../server/herdr";
 import type { Suggestion } from "../server/complete";
 import type { Menu } from "../server/screen";
 import type { Shortcut } from "../server/shortcuts";
-import type { LoadedDisplay } from "../server/spec";
+import type { DisplaySpec, LoadedDisplay } from "../server/spec";
 import type { ChatItem, Chunk } from "../server/transcript";
 import { t } from "./i18n";
 
@@ -85,6 +85,7 @@ export const api = {
   pushRemove: (endpoint: string) => post("/api/push/remove", { endpoint }),
   pushTest: (endpoint: string) => post("/api/push/test", { endpoint }),
   display: () => request<LoadedDisplay>("/api/display"),
+  saveDisplay: (spec: DisplaySpec) => post<LoadedDisplay>("/api/display", { spec }),
   shortcuts: () => request<{ shortcuts: Shortcut[] }>("/api/shortcuts"),
   saveShortcuts: (shortcuts: Shortcut[]) => post<{ shortcuts: Shortcut[] }>("/api/shortcuts", { shortcuts }),
   startSession: (b: { space: string; cwd: string; label: string; prompt: string; resume: string | null }) =>

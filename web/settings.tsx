@@ -121,6 +121,9 @@ function DisplaySection() {
         </p>
       ))}
       <p class="settings-line">{t.displayHelp}</p>
+      <a class="btn btn-ghost btn-block" href="#/display">
+        {t.customize}
+      </a>
     </section>
   );
 }

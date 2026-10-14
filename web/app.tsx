@@ -2,7 +2,8 @@ import { render, type ComponentChildren } from "preact";
 import "./theme";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { api, type Health, type LoadedDisplay, type Snapshot } from "./api";
-import { DisplayContext, DisplayInfo } from "./parts";
+import { DisplayContext, DisplayInfo, DisplaySet } from "./parts";
+import { DisplayEditor } from "./displayedit";
 import { DEFAULT_DISPLAY } from "../server/spec";
 import { ChatView } from "./chat";
 import { ConnectView, type Conn } from "./connect";
@@ -17,6 +18,7 @@ type Route =
   | { name: "connect" }
   | { name: "spaces" }
   | { name: "settings" }
+  | { name: "display" }
   | { name: "space"; space: string }
   | { name: "new"; space: string }
   | { name: "agent"; pane: string };
@@ -25,6 +27,7 @@ function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
   if (parts[0] === "spaces") return { name: "spaces" };
   if (parts[0] === "settings") return { name: "settings" };
+  if (parts[0] === "display") return { name: "display" };
   if (parts[0] === "s" && parts[1]) return { name: "space", space: parts[1] };
   if (parts[0] === "new" && parts[1]) return { name: "new", space: parts[1] };
   if (parts[0] === "a" && parts[1]) return { name: "agent", pane: parts[1] };
@@ -288,6 +291,10 @@ function Screens() {
             <div class="scroll">
               <SettingsView health={health} />
             </div>
+          ) : route.name === "display" ? (
+            <div class="scroll">
+              <DisplayEditor agents={snap.agents} />
+            </div>
           ) : route.name === "new" && space ? (
             <div class="scroll">
               <NewSessionView space={space} agents={spaceAgents} />
@@ -314,6 +321,17 @@ function Screens() {
         <TopBar title={t.settings} back="#/spaces" machine={health?.machine ?? machine} />
         <div class="scroll">
           <SettingsView health={health} />
+        </div>
+      </div>
+    );
+  }
+
+  if (route.name === "display") {
+    return (
+      <div class="screen-wrap">
+        <TopBar title={t.customize} back="#/settings" machine={health?.machine ?? machine} />
+        <div class="scroll">
+          <DisplayEditor agents={snap.agents} />
         </div>
       </div>
     );
@@ -399,9 +417,11 @@ function App() {
           </button>
         </div>
       )}
-      <DisplayContext.Provider value={display?.spec ?? DEFAULT_DISPLAY}>
-        <Screens />
-      </DisplayContext.Provider>
+      <DisplaySet.Provider value={setDisplay}>
+        <DisplayContext.Provider value={display?.spec ?? DEFAULT_DISPLAY}>
+          <Screens />
+        </DisplayContext.Provider>
+      </DisplaySet.Provider>
     </DisplayInfo.Provider>
   );
 }

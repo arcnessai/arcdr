@@ -2333,3 +2333,203 @@ a.link code {
 .shortcut-suggest button:hover {
   background: var(--surface-2);
 }
+
+/* the display editor */
+.display-editor {
+  max-width: 680px;
+  padding-bottom: 0;
+}
+.preview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.preview .agent-row {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.preview-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-elev);
+}
+.preview-input {
+  padding: 9px 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: 21px;
+  background: var(--surface);
+  color: var(--dim);
+}
+.display-editor select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.value-list {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.value-row {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.value-row.is-open {
+  border-color: var(--line-strong);
+}
+.value-head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.value-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--purple);
+}
+.value-sample {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 13px;
+}
+.value-sample.is-quiet {
+  color: var(--dim);
+  font-style: italic;
+}
+.value-place {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.value-place.at-none {
+  background: var(--surface-2);
+  color: var(--dim);
+}
+.value-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 12px 14px;
+}
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.edit-label {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.edit-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.edit-choices button {
+  min-height: 34px;
+  padding: 5px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.edit-choices button[aria-checked="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--accent);
+  font-weight: 650;
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.swatch {
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.swatch-default {
+  background: linear-gradient(135deg, var(--text) 0 50%, var(--surface-2) 50% 100%);
+}
+.swatch[aria-checked="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.edit-toggles {
+  display: flex;
+  gap: 18px;
+}
+.editor-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -14px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+.editor-bar .btn {
+  height: 40px;
+}
+.editor-note {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.editor-note.warn {
+  color: var(--red);
+}
+.value-look {
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  background: var(--bg-elev);
+}
+@media (max-width: 640px) {
+  .value-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 4px;
+  }
+  .value-sample {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

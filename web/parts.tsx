@@ -5,6 +5,7 @@ import { lang } from "./i18n";
 import {
   DEFAULT_DISPLAY,
   matches,
+  NOTIFY_TOKEN,
   valueOf,
   type DisplaySpec,
   type LoadedDisplay,
@@ -20,6 +21,8 @@ export const DisplayContext = createContext<DisplaySpec>(DEFAULT_DISPLAY);
 /** Where the spec came from and what was wrong with it, for the settings screen. */
 export const DisplayInfo = createContext<LoadedDisplay | null>(null);
 export const useDisplay = () => useContext(DisplayContext);
+/** Hands a newly saved spec to every screen at once, so the display editor's change shows without a reload. */
+export const DisplaySet = createContext<(d: LoadedDisplay) => void>(() => {});
 
 /** Colour names a mod author already knows from Claude Code's Ink theme, mapped to arcdr's palette. */
 const ALIASES: Record<string, string> = {
@@ -51,7 +54,8 @@ type Subject = Pick<Agent, "tokens"> & Partial<Pick<Agent, "tabLabel" | "title" 
 
 /** Every token: name the spec mentions, so "tokens:rest" can show only the others. */
 function namedTokens(spec: DisplaySpec): Set<string> {
-  const names = new Set<string>();
+  // The notify token is a message for the phone, not a value to show.
+  const names = new Set<string>([NOTIFY_TOKEN]);
   const add = (p?: Part) => p?.from.startsWith("token:") && names.add(p.from.slice(6));
   const rows: Row[] = [...(spec.band ?? []), ...(spec.footer ? [spec.footer] : [])];
   add(spec.agent.badge);
