@@ -25,7 +25,10 @@ const CHECKBOX = /^(\[[ xX✔✓]\]|[☐☑☒])\s*/;
 const MAX_LINES_BELOW = 6;
 
 function clean(line: string): string {
-  return line.replace(/^\s*│ ?/, "").replace(/ ?│\s*$/, "").replace(/\s+$/, "");
+  return line
+    .replace(/^\s*│ ?/, "")
+    .replace(/ ?│\s*$/, "")
+    .replace(/\s+$/, "");
 }
 
 function indentOf(line: string): number {

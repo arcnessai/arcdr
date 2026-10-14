@@ -138,7 +138,14 @@ function useScreen(pane: string, intervalMs: number | null) {
     setText(r.text);
     setMenu(r.menu);
   }, []);
-  const refresh = useCallback(() => api.screen(pane).then(apply).catch(() => {}), [pane, apply]);
+  const refresh = useCallback(
+    () =>
+      api
+        .screen(pane)
+        .then(apply)
+        .catch(() => {}),
+    [pane, apply],
+  );
   useEffect(() => {
     setText("");
     setMenu(null);
@@ -324,7 +331,12 @@ function Messages(props: {
   );
 }
 
-function MenuPanel(props: { pane: string; menu: Menu; onResult: (r: { text: string; menu: Menu | null }) => void; onError: (m: string) => void }) {
+function MenuPanel(props: {
+  pane: string;
+  menu: Menu;
+  onResult: (r: { text: string; menu: Menu | null }) => void;
+  onError: (m: string) => void;
+}) {
   const [busy, setBusy] = useState<number | null>(null);
   const choose = async (n: number, label: string) => {
     setBusy(n);
@@ -332,7 +344,9 @@ function MenuPanel(props: { pane: string; menu: Menu; onResult: (r: { text: stri
     try {
       props.onResult(await api.choose(props.pane, n, label));
     } catch (e) {
-      props.onError(e instanceof ApiError && e.code === "changed" ? t.menuChanged : e instanceof ApiError ? e.message : String(e));
+      props.onError(
+        e instanceof ApiError && e.code === "changed" ? t.menuChanged : e instanceof ApiError ? e.message : String(e),
+      );
     } finally {
       setBusy(null);
     }
@@ -613,7 +627,9 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
   useEffect(() => {
     if (!pending.some((p) => p.state === "typed")) return;
     const timer = setInterval(() => {
-      setPending((ps) => ps.map((p) => (p.state === "typed" && Date.now() - p.at > UNCONFIRMED_AFTER_MS ? { ...p, state: "unconfirmed" } : p)));
+      setPending((ps) =>
+        ps.map((p) => (p.state === "typed" && Date.now() - p.at > UNCONFIRMED_AFTER_MS ? { ...p, state: "unconfirmed" } : p)),
+      );
     }, 2000);
     return () => clearInterval(timer);
   }, [pending]);
@@ -637,11 +653,7 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
     } catch (e) {
       setPending((ps) => ps.filter((x) => x.id !== p.id));
       setToast(
-        e instanceof ApiError && e.code === "agent_blocked"
-          ? t.answerFirst
-          : e instanceof ApiError
-            ? e.message
-            : String(e),
+        e instanceof ApiError && e.code === "agent_blocked" ? t.answerFirst : e instanceof ApiError ? e.message : String(e),
       );
       return false;
     }

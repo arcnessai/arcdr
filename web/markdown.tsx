@@ -25,12 +25,21 @@ const TABLE_SEP = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
 const QUOTE = /^\s*>\s?(.*)$/;
 
 function cells(row: string): string[] {
-  return row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+  return row
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((c) => c.trim());
 }
 
 function startsBlock(line: string, next: string | undefined): boolean {
   return (
-    FENCE.test(line) || HEADING.test(line) || RULE.test(line) || LIST_ITEM.test(line) || QUOTE.test(line) ||
+    FENCE.test(line) ||
+    HEADING.test(line) ||
+    RULE.test(line) ||
+    LIST_ITEM.test(line) ||
+    QUOTE.test(line) ||
     (TABLE_ROW.test(line) && next !== undefined && TABLE_SEP.test(next))
   );
 }

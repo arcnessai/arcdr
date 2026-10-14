@@ -1,10 +1,23 @@
 // Keeps the app shell so the page opens even when the tailnet does not reach this machine,
 // and can say so. API calls always go to the network.
 const CACHE = "arcdr-__VERSION__";
-const SHELL = ["/", "/app.js?v=__VERSION__", "/style.css?v=__VERSION__", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
+const SHELL = [
+  "/",
+  "/app.js?v=__VERSION__",
+  "/style.css?v=__VERSION__",
+  "/manifest.webmanifest",
+  "/icon.svg",
+  "/icon-192.png",
+  "/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((c) => c.addAll(SHELL))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener("activate", (event) => {

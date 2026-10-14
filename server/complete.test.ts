@@ -14,10 +14,13 @@ mkdirSync(join(project, ".claude", "skills", "land"), { recursive: true });
 mkdirSync(join(project, ".claude", "commands", "ops"), { recursive: true });
 mkdirSync(join(home, ".claude", "skills", "start"), { recursive: true });
 mkdirSync(join(project, "node_modules", "x"), { recursive: true });
-writeFileSync(join(project, ".claude", "skills", "land", "SKILL.md"), "---\nname: land\ndescription: Get a branch onto master\n---\nbody");
+writeFileSync(
+  join(project, ".claude", "skills", "land", "SKILL.md"),
+  "---\nname: land\ndescription: Get a branch onto master\n---\nbody",
+);
 writeFileSync(join(project, ".claude", "commands", "deploy.md"), "---\ndescription: Ship it\n---\nDeploy the app");
 writeFileSync(join(project, ".claude", "commands", "ops", "restart.md"), "Restart the service");
-writeFileSync(join(home, ".claude", "skills", "start", "SKILL.md"), "---\nname: start\ndescription: \"Open a unit\"\n---");
+writeFileSync(join(home, ".claude", "skills", "start", "SKILL.md"), '---\nname: start\ndescription: "Open a unit"\n---');
 writeFileSync(join(project, "web", "chat.tsx"), "");
 writeFileSync(join(project, "web", "app.tsx"), "");
 writeFileSync(join(project, ".env"), "SECRET=1");
@@ -40,7 +43,11 @@ describe("slashCommands", () => {
   });
 
   test("ranks names that start with the query before names that contain it", () => {
-    expect(filterSlash(list, "st").map((s) => s.value).slice(0, 2)).toEqual(["/start", "/status"]);
+    expect(
+      filterSlash(list, "st")
+        .map((s) => s.value)
+        .slice(0, 2),
+    ).toEqual(["/start", "/status"]);
     expect(filterSlash(list, "art").map((s) => s.value)).toContain("/ops:restart");
   });
 });

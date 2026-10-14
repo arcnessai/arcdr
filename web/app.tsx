@@ -80,7 +80,17 @@ function Banner({ live, onRetry }: { live: Live; onRetry: () => void }) {
   );
 }
 
-function TopBar({ title, back, machine, children }: { title: string; back?: string; machine?: string; children?: ComponentChildren }) {
+function TopBar({
+  title,
+  back,
+  machine,
+  children,
+}: {
+  title: string;
+  back?: string;
+  machine?: string;
+  children?: ComponentChildren;
+}) {
   return (
     <header class="topbar">
       {back !== undefined ? (

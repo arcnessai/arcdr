@@ -8,7 +8,11 @@ const line = (o: unknown) => JSON.stringify(o);
 
 describe("userText", () => {
   test("a slash command reads as the command and its arguments", () => {
-    expect(userText("<command-message>start</command-message>\n<command-name>/start</command-name>\n<command-args>unit 3</command-args>")).toEqual({
+    expect(
+      userText(
+        "<command-message>start</command-message>\n<command-name>/start</command-name>\n<command-args>unit 3</command-args>",
+      ),
+    ).toEqual({
       kind: "user",
       text: "/start unit 3",
     });
@@ -20,13 +24,18 @@ describe("userText", () => {
     expect(userText("<task-notification><summary>done</summary></task-notification>")).toBeNull();
   });
   test("command output becomes a note", () => {
-    expect(userText("<local-command-stdout>Set model to opus</local-command-stdout>")).toEqual({ kind: "note", text: "Set model to opus" });
+    expect(userText("<local-command-stdout>Set model to opus</local-command-stdout>")).toEqual({
+      kind: "note",
+      text: "Set model to opus",
+    });
   });
 });
 
 describe("askAnswers", () => {
   test("pulls the answers out of AskUserQuestion's result", () => {
-    expect(askAnswers('User has answered your questions: "어떻게 갈까요?"="2,3 다 해보자", "연결?"="웹앱". You can now continue.')).toBe("2,3 다 해보자\n웹앱");
+    expect(
+      askAnswers('User has answered your questions: "어떻게 갈까요?"="2,3 다 해보자", "연결?"="웹앱". You can now continue.'),
+    ).toBe("2,3 다 해보자\n웹앱");
   });
   test("ignores other tool results", () => {
     expect(askAnswers("file written")).toBeNull();
@@ -49,13 +58,26 @@ describe("parseEntries", () => {
         ],
       },
     }),
-    line({ type: "user", uuid: "u3", message: { content: [{ type: "tool_result", tool_use_id: "t1", is_error: true, content: "boom" }] } }),
+    line({
+      type: "user",
+      uuid: "u3",
+      message: { content: [{ type: "tool_result", tool_use_id: "t1", is_error: true, content: "boom" }] },
+    }),
     line({ type: "assistant", uuid: "a2", isSidechain: true, message: { content: [{ type: "text", text: "subagent" }] } }),
     line({ type: "attachment", uuid: "q1", attachment: { type: "queued_command", prompt: "중간에 보낸 말", humanTurn: true } }),
     line({
       type: "assistant",
       uuid: "a3",
-      message: { content: [{ type: "tool_use", id: "t3", name: "AskUserQuestion", input: { questions: [{ question: "어느 쪽?", options: [{ label: "A" }, { label: "B" }], multiSelect: false }] } }] },
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "t3",
+            name: "AskUserQuestion",
+            input: { questions: [{ question: "어느 쪽?", options: [{ label: "A" }, { label: "B" }], multiSelect: false }] },
+          },
+        ],
+      },
     }),
     line({ type: "system", uuid: "s1", subtype: "compact_boundary" }),
     "{not json",
@@ -78,7 +100,9 @@ describe("parseEntries", () => {
   });
 
   test("shows a question's options", () => {
-    expect(items.find((i) => i.kind === "ask")).toMatchObject({ questions: [{ question: "어느 쪽?", options: ["A", "B"], multi: false }] });
+    expect(items.find((i) => i.kind === "ask")).toMatchObject({
+      questions: [{ question: "어느 쪽?", options: ["A", "B"], multi: false }],
+    });
   });
 });
 
@@ -115,7 +139,9 @@ describe("reading the file", () => {
   });
 
   test("a tail read that starts mid-file drops the partial first line", () => {
-    const big = Array.from({ length: 50 }, (_, i) => line({ type: "user", uuid: `u${i}`, message: { content: `m${i}` } })).join("\n") + "\n";
+    const big =
+      Array.from({ length: 50 }, (_, i) => line({ type: "user", uuid: `u${i}`, message: { content: `m${i}` } })).join("\n") +
+      "\n";
     writeFileSync(file, big);
     const chunk = readTail(file, { window: 300, maxWindow: 300 });
     expect(chunk.clipped).toBe(true);
@@ -131,7 +157,9 @@ describe("readTail widening", () => {
 
   test("reads further back when the end of the file is all bookkeeping", () => {
     const talk = Array.from({ length: 5 }, (_, i) => line({ type: "user", uuid: `u${i}`, message: { content: `m${i}` } }));
-    const filler = Array.from({ length: 40 }, (_, i) => line({ type: "attachment", uuid: `f${i}`, attachment: { type: "prompt_snapshot", text: "x".repeat(200) } }));
+    const filler = Array.from({ length: 40 }, (_, i) =>
+      line({ type: "attachment", uuid: `f${i}`, attachment: { type: "prompt_snapshot", text: "x".repeat(200) } }),
+    );
     writeFileSync(file, [...talk, ...filler].join("\n") + "\n");
     expect(readTail(file, { window: 500, minTalk: 5 }).items).toHaveLength(5);
     expect(readTail(file, { window: 500, minTalk: 5, maxWindow: 500 }).items).toHaveLength(0);
@@ -139,7 +167,13 @@ describe("readTail widening", () => {
 });
 
 describe("queue operations", () => {
-  const q = (operation: string, content?: string) => line({ type: "queue-operation", operation, timestamp: `t-${operation}-${content ?? ""}`, ...(content === undefined ? {} : { content }) });
+  const q = (operation: string, content?: string) =>
+    line({
+      type: "queue-operation",
+      operation,
+      timestamp: `t-${operation}-${content ?? ""}`,
+      ...(content === undefined ? {} : { content }),
+    });
   const items = parseEntries([
     q("enqueue", "이것도 봐줘"),
     q("enqueue", "<task-notification><summary>done</summary></task-notification>"),

@@ -182,7 +182,8 @@ export function parseEntries(lines: string[]): ChatItem[] {
     }
 
     if (e.type === "queue-operation") {
-      const op = e.operation === "enqueue" ? "add" : e.operation === "remove" ? "remove" : e.operation === "dequeue" ? "take" : null;
+      const op =
+        e.operation === "enqueue" ? "add" : e.operation === "remove" ? "remove" : e.operation === "dequeue" ? "take" : null;
       if (op) {
         const said = userText(str(e.content));
         items.push({

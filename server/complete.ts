@@ -103,7 +103,8 @@ function fromClaudeDir(claudeDir: string, into: Map<string, Suggestion>) {
         const fm = frontmatter(head);
         const body = head.replace(/^---[\s\S]*?---\s*/, "");
         const value = `/${prefix}${entry.slice(0, -3)}`;
-        if (!into.has(value)) into.set(value, { value, detail: oneLine(fm.description || body.split("\n")[0] || ""), kind: "command" });
+        if (!into.has(value))
+          into.set(value, { value, detail: oneLine(fm.description || body.split("\n")[0] || ""), kind: "command" });
       }
     }
   };
@@ -187,4 +188,3 @@ export function completeFile(cwd: string, partial: string, limit = 60): Suggesti
   // Directories first, so the next step down is near the top.
   return out.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "dir" ? -1 : 1));
 }
-

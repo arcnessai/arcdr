@@ -52,8 +52,7 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 10_0
   }
 }
 
-const post = <T = { ok: true }>(path: string, body: unknown) =>
-  request<T>(path, { method: "POST", body: JSON.stringify(body) });
+const post = <T = { ok: true }>(path: string, body: unknown) => request<T>(path, { method: "POST", body: JSON.stringify(body) });
 
 const agentPath = (pane: string, action: string) => `/api/agents/${encodeURIComponent(pane)}/${action}`;
 

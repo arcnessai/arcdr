@@ -27,12 +27,20 @@ describe("judge", () => {
   });
 
   test("refuses a Host the page is not served under", () => {
-    const f = { method: "GET", remote: "127.0.0.1", headers: new Headers({ host: "evil.example", "tailscale-user-login": "me@example.com" }) };
+    const f = {
+      method: "GET",
+      remote: "127.0.0.1",
+      headers: new Headers({ host: "evil.example", "tailscale-user-login": "me@example.com" }),
+    };
     expect(judge(f, cfg)).toMatchObject({ ok: false, status: 421 });
   });
 
   test("accepts a same-origin write", () => {
-    const f = facts("POST", { "tailscale-user-login": "me@example.com", origin: `https://${HOST}`, "sec-fetch-site": "same-origin" });
+    const f = facts("POST", {
+      "tailscale-user-login": "me@example.com",
+      origin: `https://${HOST}`,
+      "sec-fetch-site": "same-origin",
+    });
     expect(judge(f, cfg).ok).toBe(true);
   });
 

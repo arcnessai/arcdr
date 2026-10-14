@@ -4,7 +4,23 @@ import { parseBlocks } from "./markdown";
 describe("parseBlocks", () => {
   test("splits fences, headings, lists, tables and paragraphs", () => {
     const blocks = parseBlocks(
-      ["## 결과", "", "둘 다 됩니다.", "줄을 바꿔도 같은 문단", "", "- 하나", "- 둘", "", "| a | b |", "|---|---|", "| 1 | 2 |", "", "```ts", "const x = 1;", "```"].join("\n"),
+      [
+        "## 결과",
+        "",
+        "둘 다 됩니다.",
+        "줄을 바꿔도 같은 문단",
+        "",
+        "- 하나",
+        "- 둘",
+        "",
+        "| a | b |",
+        "|---|---|",
+        "| 1 | 2 |",
+        "",
+        "```ts",
+        "const x = 1;",
+        "```",
+      ].join("\n"),
     );
     expect(blocks.map((b) => b.t)).toEqual(["h", "p", "list", "table", "code"]);
     expect(blocks[1]).toEqual({ t: "p", text: "둘 다 됩니다.\n줄을 바꿔도 같은 문단" });
