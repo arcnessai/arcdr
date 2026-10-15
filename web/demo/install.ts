@@ -19,11 +19,11 @@ const TEXT: Record<string, { banner: string; short: string; link: string; close:
     notHere: "Not in the demo: this needs arcdr running on your own computer.",
   },
   ko: {
-    banner: "가짜 에이전트로 만든 데모예요. 실제 컴퓨터에서 돌아가는 건 없어요.",
+    banner: "가짜 에이전트로 꾸민 데모예요. 실제 컴퓨터와는 연결되어 있지 않아요.",
     short: "데모 · 가짜 에이전트",
-    link: "GitHub 에서 arcdr 받기",
+    link: "GitHub에서 arcdr 받기",
     close: "닫기",
-    notHere: "데모에서는 안 돼요. 내 컴퓨터에서 arcdr 을 돌려야 쓸 수 있어요.",
+    notHere: "데모에서는 쓸 수 없어요. 내 컴퓨터에 설치하면 쓸 수 있어요.",
   },
   ja: {
     banner: "架空のエージェントによるデモです。実際のマシンでは何も動いていません。",
