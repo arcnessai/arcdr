@@ -830,7 +830,15 @@ function Composer(props: {
   );
 }
 
-export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
+export function ChatView(props: {
+  agent: Agent;
+  wide: boolean;
+  /** In one of several desktop panes: closes this one. */
+  onClose?: () => void;
+  /** A pane half the screen high: less room for the frame, more for the conversation. */
+  compact?: boolean;
+}) {
+  const { agent, wide } = props;
   const [tab, setTab] = useState<"chat" | "changes" | "screen">("chat");
   const [keysOpen, setKeysOpen] = useState(false);
   const [pending, setPending] = useState<Pending[]>([]);
@@ -920,7 +928,7 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
 
   return (
     <FileOpener.Provider value={setFilePath}>
-      <section class={`chat st-${agent.status}`}>
+      <section class={`chat st-${agent.status}${props.compact ? " is-compact" : ""}`}>
         <header class="chat-head">
           {!wide && (
             <a class="icon-btn" href={`#/s/${encodeURIComponent(agent.space)}`} aria-label={t.toList}>
@@ -939,6 +947,11 @@ export function ChatView({ agent, wide }: { agent: Agent; wide: boolean }) {
             <StatusDot status={agent.status} />
             {STATUS_LABEL[agent.status]}
           </span>
+          {props.onClose && (
+            <button class="icon-btn small" aria-label={t.closePane} title={t.closePane} onClick={props.onClose}>
+              <I.X size={16} />
+            </button>
+          )}
         </header>
 
         <div class="seg" role="tablist">

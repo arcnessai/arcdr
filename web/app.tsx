@@ -1,7 +1,7 @@
 import { render, type ComponentChildren } from "preact";
 import "./theme";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-import { api, type Health, type LoadedDisplay, type Snapshot } from "./api";
+import { api, type Agent, type Health, type LoadedDisplay, type Snapshot } from "./api";
 import { DisplayContext, DisplayInfo, DisplaySet } from "./parts";
 import { DisplayEditor } from "./displayedit";
 import { DEFAULT_DISPLAY } from "../server/spec";
@@ -12,6 +12,7 @@ import * as I from "./icons";
 import { NewSessionView } from "./newsession";
 import { SettingsView } from "./settings";
 import { AgentList, SpaceCard, SpaceRow, Summary } from "./lists";
+import { beside, close, layoutOf, parseSplit, prune, show, type Split } from "./split";
 import { t } from "./i18n";
 
 type Route =
@@ -149,6 +150,51 @@ function TopBar({
   );
 }
 
+/** The desktop's panes, kept per device: which agents are open side by side survives a reload. */
+function useSplit(): [Split, (next: Split | ((s: Split) => Split)) => void] {
+  const [split, setSplit] = useState<Split>(() => {
+    try {
+      return parseSplit(localStorage.getItem("split"));
+    } catch {
+      return parseSplit(null);
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("split", JSON.stringify(split));
+    } catch {
+      /* private mode: the split lasts for this page */
+    }
+  }, [split]);
+  return [split, setSplit];
+}
+
+/** Up to four conversations at once: one alone, two side by side, three with the first down the left, four in a grid. */
+function Panes(props: { split: Split; agents: Agent[]; onFocus: (pane: string) => void; onClose: (pane: string) => void }) {
+  const shown = props.split.panes.flatMap((p) => props.agents.find((a) => a.pane === p) ?? []);
+  const layout = layoutOf(shown.length);
+  return (
+    <div class={`panes panes-${layout}`}>
+      {shown.map((a) => (
+        <div
+          key={a.pane}
+          class={`pane${a.pane === props.split.focus ? " is-focus" : ""}`}
+          // The pane a person touches is the one the address and the list follow.
+          onMouseDownCapture={() => a.pane !== props.split.focus && props.onFocus(a.pane)}
+          onFocusCapture={() => a.pane !== props.split.focus && props.onFocus(a.pane)}
+        >
+          <ChatView
+            agent={a}
+            wide
+            onClose={shown.length > 1 ? () => props.onClose(a.pane) : undefined}
+            compact={layout === "four" || (layout === "three" && a.pane !== shown[0]!.pane)}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Screens() {
   const route = useRoute();
   const wide = useMedia("(min-width: 900px)");
@@ -216,6 +262,27 @@ function Screens() {
   }, [firstSpace]);
 
   const agent = route.name === "agent" ? (snap?.agents.find((a) => a.pane === route.pane) ?? null) : null;
+
+  // The address names the focused pane; a plain click puts an agent there (or focuses its pane).
+  const [split, setSplit] = useSplit();
+  const routePane = route.name === "agent" ? route.pane : null;
+  useEffect(() => {
+    if (wide && routePane) setSplit((s) => show(s, routePane));
+  }, [wide, routePane]);
+  useEffect(() => {
+    if (snap) setSplit((s) => prune(s, new Set(snap.agents.map((a) => a.pane))));
+  }, [snap]);
+  // Already this render, before the effect above keeps it: no frame shows the old agent in the focused pane.
+  const view = wide && routePane ? show(split, routePane) : split;
+  const openBeside = (pane: string) => {
+    setSplit((s) => beside(s, pane));
+    go(`#/a/${encodeURIComponent(pane)}`);
+  };
+  const closePane = (pane: string) => {
+    const next = close(view, pane);
+    setSplit(next);
+    go(next.focus ? `#/a/${encodeURIComponent(next.focus)}` : `#/s/${encodeURIComponent(firstSpace)}`);
+  };
   const spaceId = route.name === "space" || route.name === "new" ? route.space : agent ? agent.space : firstSpace;
   const space = snap?.spaces.find((s) => s.id === spaceId) ?? null;
   const spaceAgents = useMemo(() => snap?.agents.filter((a) => a.space === spaceId) ?? [], [snap, spaceId]);
@@ -283,7 +350,7 @@ function Screens() {
               <I.Plus size={16} />
             </a>
           </p>
-          <AgentList agents={spaceAgents} selected={agent?.pane ?? null} />
+          <AgentList agents={spaceAgents} selected={agent?.pane ?? null} open={view.panes} onBeside={openBeside} />
         </aside>
         <main class="main">
           {banner}
@@ -300,7 +367,12 @@ function Screens() {
               <NewSessionView space={space} agents={spaceAgents} />
             </div>
           ) : agent ? (
-            <ChatView agent={agent} wide />
+            <Panes
+              split={view}
+              agents={snap.agents}
+              onFocus={(pane) => go(`#/a/${encodeURIComponent(pane)}`)}
+              onClose={closePane}
+            />
           ) : (
             (lostAgent ?? (
               <div class="placeholder">

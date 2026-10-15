@@ -44,13 +44,26 @@ export function AgentLine({ agent, class: cls }: { agent: Agent; class: string }
   return <Parts parts={spec.agent.line} of={agent} class={cls} />;
 }
 
-export function AgentRow({ agent, selected }: { agent: Agent; selected: boolean }) {
+export function AgentRow(props: {
+  agent: Agent;
+  selected: boolean;
+  /** Open in a pane of its own (desktop): Ctrl+click or ⌘+click does it. */
+  onBeside?: (pane: string) => void;
+  /** Open in one of the desktop's panes, not the focused one. */
+  inPane?: boolean;
+}) {
+  const { agent, selected, onBeside } = props;
   const spec = useDisplay();
   return (
     <a
-      class={`agent-row st-${agent.status}${selected ? " selected" : ""}`}
+      class={`agent-row st-${agent.status}${selected ? " selected" : ""}${props.inPane ? " in-pane" : ""}`}
       href={`#/a/${encodeURIComponent(agent.pane)}`}
       aria-current={selected ? "page" : undefined}
+      onClick={(e) => {
+        if (!onBeside || !(e.ctrlKey || e.metaKey)) return;
+        e.preventDefault();
+        onBeside(agent.pane);
+      }}
     >
       <Badge agent={agent} />
       <StatusDot status={agent.status} />
@@ -63,13 +76,40 @@ export function AgentRow({ agent, selected }: { agent: Agent; selected: boolean 
   );
 }
 
-export function AgentList({ agents, selected }: { agents: Agent[]; selected: string | null }) {
+export function AgentList(props: {
+  agents: Agent[];
+  selected: string | null;
+  /** Desktop: the agents open in panes, and how to open one beside them. */
+  open?: string[];
+  onBeside?: (pane: string) => void;
+}) {
+  const { agents, selected, onBeside } = props;
   if (agents.length === 0) return <p class="empty">{t.noAgents}</p>;
   return (
     <nav class="agent-list" aria-label={t.agents}>
-      {agents.map((a) => (
-        <AgentRow key={a.pane} agent={a} selected={a.pane === selected} />
-      ))}
+      {agents.map((a) =>
+        onBeside ? (
+          <div key={a.pane} class="agent-item">
+            <AgentRow
+              agent={a}
+              selected={a.pane === selected}
+              inPane={a.pane !== selected && (props.open ?? []).includes(a.pane)}
+              onBeside={onBeside}
+            />
+            <button
+              type="button"
+              class="icon-btn small split-btn"
+              aria-label={t.openBeside}
+              title={t.openBeside}
+              onClick={() => onBeside(a.pane)}
+            >
+              <I.Columns size={16} />
+            </button>
+          </div>
+        ) : (
+          <AgentRow key={a.pane} agent={a} selected={a.pane === selected} />
+        ),
+      )}
     </nav>
   );
 }
