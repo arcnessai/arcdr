@@ -308,6 +308,15 @@ Enter to select · ↑/↓ to navigate · Esc to cancel
       if (i >= 0) agents.splice(i, 1);
       publish();
     },
+    async moveAgent(agent, before) {
+      const moving = agents.splice(
+        agents.findIndex((a) => a.pane === agent.pane),
+        1,
+      );
+      const at = before ? agents.findIndex((a) => a.pane === before.pane) : -1;
+      agents.splice(at < 0 ? agents.length : at, 0, ...moving);
+      publish();
+    },
   };
 
   let display: DisplaySpec = {

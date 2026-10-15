@@ -1,8 +1,10 @@
-import type { Agent, AgentStatus, Space } from "./api";
+import { useEffect, useState } from "preact/hooks";
+import { api, type Agent, type AgentStatus, type Space } from "./api";
 import { counts, STATUS_LABEL, type Counts } from "./format";
 import * as I from "./icons";
 import { t } from "./i18n";
 import { nameOf, PartView, Parts, useDisplay } from "./parts";
+import { applyMove, useReorder } from "./reorder";
 
 export function StatusDot({ status }: { status: AgentStatus }) {
   return (
@@ -76,6 +78,10 @@ export function AgentRow(props: {
   );
 }
 
+/**
+ * A space's agents in herdr's tab order. Dragging a row (a finger holds it first) moves the agent's tab in
+ * herdr itself, so the terminal's sidebar and every screen show the same order.
+ */
 export function AgentList(props: {
   agents: Agent[];
   selected: string | null;
@@ -84,32 +90,60 @@ export function AgentList(props: {
   onBeside?: (pane: string) => void;
 }) {
   const { agents, selected, onBeside } = props;
+  // herdr's new order arrives with the next snapshot, a moment later: until then the move shows already.
+  const [pending, setPending] = useState<{ pane: string; before: string | null } | null>(null);
+  const order = agents.map((a) => a.pane).join(",");
+  useEffect(() => setPending(null), [order]);
+  useEffect(() => {
+    if (!pending) return;
+    const timer = setTimeout(() => setPending(null), 4000);
+    return () => clearTimeout(timer);
+  }, [pending]);
+  const shown = pending ? applyMove(agents, pending.pane, pending.before) : agents;
+  const move = (pane: string, before: string | null) => {
+    setPending({ pane, before });
+    api.move(pane, before).catch(() => setPending(null));
+  };
+  const { list, drag } = useReorder(
+    shown.map((a) => a.pane),
+    move,
+    agents.length > 0,
+  );
+
   if (agents.length === 0) return <p class="empty">{t.noAgents}</p>;
   return (
-    <nav class="agent-list" aria-label={t.agents}>
-      {agents.map((a) =>
-        onBeside ? (
-          <div key={a.pane} class="agent-item">
+    <nav ref={list} class={`agent-list${drag ? " is-dragging" : ""}`} aria-label={t.agents}>
+      {shown.map((a) => {
+        const lifted = drag?.pane === a.pane;
+        return (
+          <div
+            key={a.pane}
+            data-pane={a.pane}
+            class={`agent-item${lifted ? " is-lifted" : ""}${drag && !lifted && drag.before === a.pane ? " drop-before" : ""}`}
+            style={lifted ? { transform: `translateY(${drag!.dy}px)` } : undefined}
+            title={t.dragToReorder}
+          >
             <AgentRow
               agent={a}
               selected={a.pane === selected}
               inPane={a.pane !== selected && (props.open ?? []).includes(a.pane)}
               onBeside={onBeside}
             />
-            <button
-              type="button"
-              class="icon-btn small split-btn"
-              aria-label={t.openBeside}
-              title={t.openBeside}
-              onClick={() => onBeside(a.pane)}
-            >
-              <I.Columns size={16} />
-            </button>
+            {onBeside && (
+              <button
+                type="button"
+                class="icon-btn small split-btn"
+                aria-label={t.openBeside}
+                title={t.openBeside}
+                onClick={() => onBeside(a.pane)}
+              >
+                <I.Columns size={16} />
+              </button>
+            )}
           </div>
-        ) : (
-          <AgentRow key={a.pane} agent={a} selected={a.pane === selected} />
-        ),
-      )}
+        );
+      })}
+      {drag && drag.before === null && <div class="drop-end" aria-hidden="true" />}
     </nav>
   );
 }

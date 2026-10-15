@@ -91,6 +91,8 @@ export const api = {
   startSession: (b: { space: string; cwd: string; label: string; prompt: string; resume: string | null }) =>
     request<{ pane: string; sent: boolean }>("/api/sessions", { method: "POST", body: JSON.stringify(b) }, 120_000),
   close: (pane: string) => post(agentPath(pane, "close"), {}),
+  /** Moves the agent's tab before another agent's (null: to the end), in herdr itself. */
+  move: (pane: string, before: string | null) => post(agentPath(pane, "move"), { before }),
   file: (pane: string, path: string) =>
     request<{ path: string; text: string; size: number; truncated: boolean }>(
       `${agentPath(pane, "file")}?path=${encodeURIComponent(path)}`,

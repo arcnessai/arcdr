@@ -4,7 +4,7 @@ import { createApp, type Backend } from "./app";
 import { completeFile, filterSlash, slashCommands } from "./complete";
 import { loadConfig } from "./config";
 import { existsSync, statSync } from "node:fs";
-import { closePane, createTab, HerdrError, prompt, readScreen, sendInput, sendKeys, startClaude } from "./herdr";
+import { closePane, createTab, HerdrError, moveTab, prompt, readScreen, sendInput, sendKeys, startClaude } from "./herdr";
 import { pastSessions } from "./sessions";
 import { SnapshotHub } from "./hub";
 import { displayLoader, saveDisplay } from "./display";
@@ -44,6 +44,7 @@ const herdrBackend: Backend = {
     return pane;
   },
   closePane: (pane) => closePane(cfg.socketPath, pane),
+  moveAgent: (agent, before) => moveTab(cfg.socketPath, agent.tab, before?.tab ?? null),
   complete(agent, kind, query) {
     if (!agent.cwd) return [];
     return kind === "file" ? completeFile(agent.cwd, query) : filterSlash(slashCommands(agent.cwd, home), query);

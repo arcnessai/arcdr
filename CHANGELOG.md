@@ -13,7 +13,7 @@ The first public release.
   the `notify` token rings the phone; the starter mod `arcdr-report`; the `arcdr-mod` skill.
 - **Desktop panes**: up to four conversations at once.
 - **＋ tray**: key buttons, photos, camera, files, and your saved commands.
-- **Sessions**: start, resume and close from the phone.
+- **Sessions**: start, resume and close from the phone; drag agents to reorder herdr's tabs.
 - **Web Push**, six themes, text size and typeface per device, four languages.
 - **herdr plugin**: `herdr plugin install arcnessai/arcdr` adds panes to set it up and to open it on your
   phone with a QR code.

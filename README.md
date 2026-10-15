@@ -173,7 +173,7 @@ Found a problem? Report it privately — [SECURITY.md](SECURITY.md).
 | **Keys** | Esc, arrows, Tab, ⇧Tab, Enter; Ctrl+C is left out on purpose (twice exits Claude Code) |
 | **Screen** | The terminal as it is now, wrapped for a phone |
 | **Session** | A stop button where send is while the agent works (Esc ends its turn); permission-mode and model chips, `/compact`, `/context`, `/usage`, rewind, `/clear` |
-| **Sessions** | Start one in any folder (optionally with a first message), resume an earlier conversation, close one |
+| **Sessions** | Start one in any folder (optionally with a first message), resume an earlier conversation, close one; drag an agent to reorder (on a phone, hold it first) — it moves the tab in herdr itself |
 | **Notifications** | Web Push when an agent needs you or finishes, when a mod sends `notify`, or when a value matches your rule |
 | **Panes** | On a desktop, up to four conversations at once: ⊞ on an agent (or Ctrl+click) opens it beside the others — two side by side, three, or a 2×2 grid; kept per device |
 | **Looks** | Phone and desktop layouts; themes: Auto, Dracula, Light, Arcness, Arcness Light, Nord; text size in five steps and the device's own typefaces (default, serif, monospace), per device; English, 한국어, 日本語, 简体中文 |

@@ -109,8 +109,10 @@ function tokens(value: unknown): Record<string, string> {
 
 export function normalizeSnapshot(raw: any): Snapshot {
   const snap = raw?.snapshot ?? raw ?? {};
-  const tabs = new Map<string, { number: number; label: string }>();
-  for (const t of snap.tabs ?? []) tabs.set(t.tab_id, { number: Number(t.number) || 0, label: String(t.label ?? "") });
+  // A tab keeps its number when it moves; its place in the list is the order herdr's sidebar shows.
+  const tabs = new Map<string, { number: number; label: string; at: number }>();
+  for (const [at, t] of (snap.tabs ?? []).entries())
+    tabs.set(t.tab_id, { number: Number(t.number) || 0, label: String(t.label ?? ""), at });
 
   const spaces: Space[] = (snap.workspaces ?? []).map((w: any) => ({
     id: String(w.workspace_id),
@@ -121,8 +123,10 @@ export function normalizeSnapshot(raw: any): Snapshot {
   }));
   spaces.sort((a, b) => a.number - b.number);
 
+  const order = new Map<string, number>();
   const agents: Agent[] = (snap.agents ?? []).map((a: any) => {
-    const tab = tabs.get(a.tab_id) ?? { number: 0, label: "" };
+    const tab = tabs.get(a.tab_id) ?? { number: 0, label: "", at: Number.MAX_SAFE_INTEGER };
+    order.set(String(a.pane_id), tab.at);
     const session = a.agent_session;
     return {
       pane: String(a.pane_id),
@@ -139,7 +143,7 @@ export function normalizeSnapshot(raw: any): Snapshot {
       cwd: String(a.foreground_cwd ?? a.cwd ?? ""),
     };
   });
-  agents.sort((a, b) => a.tabNumber - b.tabNumber || a.pane.localeCompare(b.pane));
+  agents.sort((a, b) => order.get(a.pane)! - order.get(b.pane)! || a.pane.localeCompare(b.pane));
 
   return { version: String(snap.version ?? ""), spaces, agents };
 }
@@ -191,6 +195,20 @@ export async function startClaude(socketPath: string, pane: string, args: string
     { name: `arcdr-${Date.now().toString(36)}`, kind: "claude", pane_id: pane, args, timeout_ms: 90_000 },
     95_000,
   );
+}
+
+/**
+ * Moves a tab before another one in its space (before null: to the end). herdr takes the place in the list
+ * as it is now, the moving tab still in it: "before the tab at index i".
+ */
+export async function moveTab(socketPath: string, tab: string, before: string | null): Promise<void> {
+  const space = tab.slice(0, tab.indexOf(":"));
+  const list = await call<{ tabs?: { tab_id: string }[] }>(socketPath, "tab.list", { workspace_id: space });
+  const ids = (list.tabs ?? []).map((t) => t.tab_id);
+  if (!ids.includes(tab)) throw new HerdrError("tab_not_found", `no tab ${tab}`);
+  const at = before === null ? ids.length : ids.indexOf(before);
+  if (at < 0) throw new HerdrError("tab_not_found", `no tab ${before} in ${space}`);
+  await call(socketPath, "tab.move", { tab_id: tab, insert_index: at });
 }
 
 export async function closePane(socketPath: string, pane: string): Promise<void> {

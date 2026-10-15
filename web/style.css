@@ -2701,3 +2701,35 @@ a.link code {
   border-radius: 10px;
   background: var(--bg);
 }
+
+/* dragging agents into a new order */
+.agent-item {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.agent-list.is-dragging .agent-item {
+  cursor: grabbing;
+}
+.agent-item.is-lifted {
+  z-index: 6;
+  border-radius: 10px;
+  background: var(--surface-2);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.35);
+  opacity: 0.96;
+}
+.agent-item.drop-before::before,
+.drop-end {
+  content: "";
+  display: block;
+  height: 3px;
+  margin: 0 10px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.agent-item.drop-before::before {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+}

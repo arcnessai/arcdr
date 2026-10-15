@@ -32,6 +32,8 @@ export interface Backend {
   /** A new tab in the space with Claude Code started in cwd (resuming a conversation if named); answers its pane. */
   startSession(space: string, cwd: string, label: string | null, resume: string | null): Promise<string>;
   closePane(pane: string): Promise<void>;
+  /** Moves the agent's tab before another agent's tab in the same space (null: to the end), in herdr itself. */
+  moveAgent(agent: Agent, before: Agent | null): Promise<void>;
 }
 
 export interface AppOptions {
@@ -317,7 +319,7 @@ export function createApp({ backend, machine, distDir, gate, push, display, save
       });
     }
 
-    const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose|upload|close|file)$/.exec(path);
+    const m = /^\/api\/agents\/([^/]+)\/(chat|screen|complete|send|type|keys|choose|upload|close|file|move)$/.exec(path);
     if (!m) throw new HttpError(404, "not_found", "no such route");
     const pane = decodeURIComponent(m[1]!);
     if (!/^[\w-]+:[\w-]+$/.test(pane)) throw new HttpError(400, "bad_pane", "malformed pane id");
@@ -393,6 +395,15 @@ export function createApp({ backend, machine, distDir, gate, push, display, save
 
     if (action === "close") {
       await backend.closePane(pane);
+      return json(200, { ok: true });
+    }
+
+    if (action === "move") {
+      if (b.before !== null && (typeof b.before !== "string" || !/^[\w-]+:[\w-]+$/.test(b.before)))
+        throw new HttpError(400, "bad_field", "before must be a pane id or null");
+      const before = b.before === null ? null : await agentFor(b.before);
+      if (before && before.space !== agent.space) throw new HttpError(400, "other_space", "agents move within their space");
+      if (before?.tab !== agent.tab) await backend.moveAgent(agent, before);
       return json(200, { ok: true });
     }
 

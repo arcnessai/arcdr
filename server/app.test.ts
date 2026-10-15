@@ -26,6 +26,7 @@ function setup() {
   const saved: PushSubscriptionRecord[] = [];
   let shortcuts: Shortcut[] = [];
   const savedDisplays: DisplaySpec[] = [];
+  const moves: string[] = [];
   const snapshot: Snapshot = {
     version: "0.9.3",
     spaces: [{ id: "w1", number: 1, label: "s", status: "blocked", tokens: {} }],
@@ -43,6 +44,7 @@ function setup() {
     pastSessions: () => [],
     startSession: async () => "w1:p9",
     closePane: async () => {},
+    moveAgent: async (a, before) => void moves.push(`${a.pane}>${before?.pane ?? "end"}`),
   };
   const handle = createApp({
     backend,
@@ -72,7 +74,7 @@ function setup() {
       () => {},
     );
   const post = (path: string, body: unknown) => call(path, { method: "POST", body: JSON.stringify(body) });
-  return { call, post, keys, saved, savedDisplays, handle };
+  return { call, post, keys, saved, savedDisplays, moves, handle };
 }
 
 describe("routes", () => {
@@ -149,5 +151,13 @@ describe("routes", () => {
     const ok = await post("/api/display", { spec: { agent: {}, band: [{ left: [{ from: "token:x", as: "chip" }] }] } });
     expect(ok.status).toBe(200);
     expect(savedDisplays[0]!.band).toEqual([{ left: [{ from: "token:x", as: "chip" }], right: undefined }]);
+  });
+
+  test("an agent moves before another in its space, or to the end, and nowhere else", async () => {
+    const { post, moves } = setup();
+    expect((await post("/api/agents/w1:p1/move", { before: "../x" })).status).toBe(400);
+    expect((await post("/api/agents/w1:p1/move", { before: "w9:p9" })).status).toBe(404);
+    expect((await post("/api/agents/w1:p1/move", { before: null })).status).toBe(200);
+    expect(moves).toEqual(["w1:p1>end"]);
   });
 });
