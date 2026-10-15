@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "build:demo": "bun run scripts/build-demo.ts",
     "start": "bun run server/main.ts",
     "test": "bun test ./server ./web",
     "typecheck": "tsc --noEmit",
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "preact": "11.0.1",
+    "qrcode-generator": "2.0.4",
     "web-push": "3.6.7"
   },
   "devDependencies": {

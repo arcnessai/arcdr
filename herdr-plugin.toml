@@ -1,0 +1,42 @@
+# arcdr as a herdr plugin: `herdr plugin install arcnessai/arcdr`, then open its panes from herdr.
+# The server itself runs as a systemd user service (scripts/setup.sh), not inside herdr.
+id = "arcness.arcdr"
+name = "arcdr"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Your herdr agents, and what your Claude Code mods report, on your phone over Tailscale"
+platforms = ["linux"]
+
+[[panes]]
+id = "phone"
+title = "arcdr: open on your phone"
+placement = "popup"
+width = 76
+height = 34
+command = ["bash", "scripts/herdr-plugin.sh", "phone"]
+
+[[panes]]
+id = "setup"
+title = "arcdr: set up"
+placement = "tab"
+command = ["bash", "scripts/herdr-plugin.sh", "setup"]
+
+[[panes]]
+id = "status"
+title = "arcdr: status"
+placement = "popup"
+width = 90
+height = 24
+command = ["bash", "scripts/herdr-plugin.sh", "status"]
+
+# Actions, so each pane can have a key: [[keys.command]] key = "prefix+p", type = "plugin_action",
+# command = "arcness.arcdr.phone"
+[[actions]]
+id = "phone"
+title = "Open arcdr on your phone"
+command = ["bash", "-c", "\"${HERDR_BIN_PATH:-herdr}\" plugin pane open --plugin arcness.arcdr --entrypoint phone"]
+
+[[actions]]
+id = "setup"
+title = "Set up arcdr"
+command = ["bash", "-c", "\"${HERDR_BIN_PATH:-herdr}\" plugin pane open --plugin arcness.arcdr --entrypoint setup"]

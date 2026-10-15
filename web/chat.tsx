@@ -678,6 +678,25 @@ function Composer(props: {
   };
 
   const blocked = props.agent.status === "blocked";
+  // While the agent works and nothing is typed, the send button stops it: Esc ends Claude Code's turn.
+  // Text typed meanwhile still goes out (queued), so the button is send again as soon as there is some.
+  const [stopping, setStopping] = useState(false);
+  const working = props.agent.status === "working";
+  useEffect(() => {
+    if (!working) setStopping(false);
+  }, [working]);
+  const stop = async () => {
+    navigator.vibrate?.(12);
+    setStopping(true);
+    try {
+      await api.keys(props.agent.pane, ["esc"]);
+    } catch (e) {
+      setStopping(false);
+      props.onError(e instanceof ApiError ? e.message : String(e));
+    }
+    // If the turn does not end (the screen had nothing to stop), the button comes back.
+    setTimeout(() => setStopping(false), 4000);
+  };
   return (
     <>
       {trayOpen && (
@@ -822,9 +841,22 @@ function Composer(props: {
             }
           }}
         />
-        <button type="submit" class="send-btn" disabled={!text.trim() || sending} aria-label={t.send}>
-          <I.Send />
-        </button>
+        {working && !text.trim() ? (
+          <button
+            type="button"
+            class="send-btn stop-btn"
+            disabled={stopping}
+            aria-label={t.stop}
+            title={t.stop}
+            onClick={() => void stop()}
+          >
+            <I.Stop />
+          </button>
+        ) : (
+          <button type="submit" class="send-btn" disabled={!text.trim() || sending} aria-label={t.send}>
+            <I.Send />
+          </button>
+        )}
       </form>
     </>
   );

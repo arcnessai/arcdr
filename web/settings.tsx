@@ -6,6 +6,46 @@ import { DisplayInfo } from "./parts";
 import { currentTheme, setTheme, THEMES, type ThemeId } from "./theme";
 import { useContext } from "preact/hooks";
 import { readPush, savePrefs, sendTest, turnOff, turnOn, type PushState } from "./push";
+import { qrModules } from "./qr";
+
+/** This page's own address as a QR code, for opening it on a phone from a computer that already has it. */
+function QrCode({ text }: { text: string }) {
+  const m = qrModules(text);
+  const quiet = 4;
+  const size = m.length + quiet * 2;
+  const d = m.flatMap((row, r) => row.flatMap((dark, c) => (dark ? [`M${c + quiet} ${r + quiet}h1v1h-1z`] : []))).join("");
+  return (
+    <svg class="qr" viewBox={`0 0 ${size} ${size}`} role="img" aria-label={text} shape-rendering="crispEdges">
+      <rect width={size} height={size} fill="#fff" />
+      <path d={d} fill="#000" />
+    </svg>
+  );
+}
+
+function OtherDevice() {
+  const address = location.origin;
+  const [copied, setCopied] = useState(false);
+  return (
+    <div class="other-device">
+      <QrCode text={address} />
+      <div class="other-device-text">
+        <p class="settings-line">{t.otherDeviceHint}</p>
+        <code class="other-device-url">{address}</code>
+        <button
+          class="btn btn-ghost"
+          onClick={() =>
+            void navigator.clipboard?.writeText(address).then(
+              () => setCopied(true),
+              () => {},
+            )
+          }
+        >
+          {copied ? t.copied : t.copyAddress}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Notifications() {
   const [state, setState] = useState<PushState | null>(null);
@@ -154,6 +194,10 @@ export function SettingsView({ health }: { health: Health | null }) {
         <a class="btn btn-ghost" href="#/">
           {t.openConnect}
         </a>
+      </section>
+      <section class="settings-card">
+        <h2>{t.otherDevice}</h2>
+        <OtherDevice />
       </section>
     </div>
   );

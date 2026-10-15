@@ -103,6 +103,11 @@ export const X = (p: Props) => (
     <path d="M6 6l12 12M18 6L6 18" />
   </Svg>
 );
+export const Stop = (p: Props) => (
+  <Svg {...p}>
+    <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" />
+  </Svg>
+);
 export const Columns = (p: Props) => (
   <Svg {...p}>
     <rect x="3" y="4" width="18" height="16" rx="2.5" />
