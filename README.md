@@ -13,6 +13,7 @@ Answer its questions and keep it moving from your phone or any other computer, o
 [![Tailscale](https://img.shields.io/badge/Tailscale-tailnet%20only-5b97e8?style=flat-square)](https://tailscale.com)
 [![PWA](https://img.shields.io/badge/PWA-installable-ff79c6?style=flat-square)](#on-the-phone)
 [![Bun](https://img.shields.io/badge/Bun-1.4-f2a65e?style=flat-square)](https://bun.sh)
+[![No telemetry](https://img.shields.io/badge/telemetry-none-50fa7b?style=flat-square)](#safe-by-design)
 [![License: MIT](https://img.shields.io/badge/license-MIT-50fa7b?style=flat-square)](LICENSE)
 
 **[▶ Try it in your browser](https://arcnessai.github.io/arcdr/)** — made-up agents, nothing to install
@@ -31,7 +32,7 @@ Open Claude Code anywhere on the machine that runs herdr and say:
 
 > **Set up arcdr from https://github.com/arcnessai/arcdr**
 
-or, in Korean, *"https://github.com/arcnessai/arcdr 셋팅해줘"*. Already have a clone? Open it and say *"set it up"*.
+Already have a clone? Open it and say *"set it up"*.
 
 The [`arcdr-setup`](.claude/skills/arcdr-setup/SKILL.md) skill clones it, installs what is missing, starts the
 service, hands you the two links only you can open (the Tailscale login and its HTTPS switch), and asks before
@@ -123,6 +124,26 @@ There are good phone clients for herdr already. arcdr is the one to pick if:
 
 The full format, every place, and a worked example: **[docs/mods.md](docs/mods.md)**.
 
+## Safe by design
+
+A remote client for coding agents is a remote shell: whoever gets in can type into terminals that run as you.
+arcdr is built around that one fact. Before you put any such tool on your phone, check it against this list.
+
+| What goes wrong in tools like this | What arcdr does |
+|---|---|
+| **Reachable from more places than you think** — the LAN, the Windows side of WSL, the internet | Listens on `127.0.0.2` only, which WSL does not forward to Windows (measured), and is published only inside your tailnet with `tailscale serve`. Never `tailscale funnel` |
+| **A token or pairing code that can leak** — in a URL, in browser storage, in a screenshot | No tokens at all. Every request must carry your Tailscale identity, which only `tailscale serve` on this machine sets, and it must be a login you listed |
+| **A relay or a cloud in the middle** | None. Your phone talks to your machine over WireGuard. The only outside service is Web Push, if you turn it on, and its payloads are encrypted for your browser |
+| **Code that updates itself from the internet and runs as you** | No self-update. You update with `git pull`, after reading what changed |
+| **Telemetry and update checks** | None. The page may talk only to its own server (`connect-src 'self'`); the server reaches out only for the Web Push you turned on |
+| **Any key at any time** — Ctrl+C twice ends a session | Keys come from an allow list without Ctrl+C. Choosing an option reads the screen again and refuses if the menu changed |
+| **Transcript text drawn as HTML** — a README the agent reads could run script on your phone | Markdown is built as elements, never as HTML. A strict Content-Security-Policy on top |
+| **Another web page making your browser send commands** | Writes need your published address as `Origin` and `Host` |
+| **Reading any file on the machine** | Uploads are checked against their type, capped, and kept in one folder. The file viewer refuses `~/.ssh`, `.env`, login files and keys, judged after following links |
+
+Small enough to read in an afternoon: one Bun server and one Preact page, three small runtime dependencies.
+Found a problem? Report it privately — [SECURITY.md](SECURITY.md).
+
 ## What else you can do
 
 <table>
@@ -204,28 +225,6 @@ The server asks herdr for a snapshot once a second while a page is open (and for
 changes to the page, reads each session's transcript from where its last read ended, and turns the visible
 terminal into choices when a menu is on it. `display.json` decides where each reported value is drawn. arcdr
 installs nothing into herdr or Claude Code; the starter mod is yours to add or leave out.
-
-## Security
-
-Whoever gets in can type into your agents' terminals, which run as your user. So there is one way in, kept narrow.
-
-<details>
-<summary><b>The model, step by step</b></summary>
-
-- **Loopback only.** The server binds `127.0.0.2`. WSL forwards `127.0.0.1` listeners to Windows; it does not
-  forward `127.0.0.2` (measured), so Windows programs cannot reach it.
-- **Your Tailscale identity.** Every request must carry `Tailscale-User-Login`, which only `tailscale serve` on
-  this machine sets, and name a login in `ARCDR_OWNERS`. Never `tailscale funnel`.
-- **Same-origin writes.** Writes need an `Origin` of the published host; `Host` must be that name.
-- **Keys from a list.** No Ctrl+C. Choosing re-reads the screen and refuses if the option changed.
-- **Nothing rendered as HTML.** Transcripts carry text from anywhere; Markdown is built as elements. Strict CSP.
-- **Files.** Uploads: images, PDF, text; content checked against the type; 15 MB; swept after 14 days.
-  Preview: refuses `~/.ssh`, `~/.claude.json`, login files, `.env`, key files, judged after following links.
-- **What you save.** Commands and display settings are checked whole before they are written; a display file
-  replaced from the phone stays beside it as `display.json.bak`.
-- **Push.** Subscriptions only to browser push services; payloads encrypted for the browser.
-
-</details>
 
 ## Configuration
 
