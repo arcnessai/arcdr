@@ -56,6 +56,8 @@ already arranges and your mods already annotate.
 - **Spaces and tabs as herdr has them.** Start a session in a new herdr tab, resume an old conversation,
   close one — from the phone.
 - **Status from herdr's agent detection.** The one waiting on you turns pink and your phone buzzes.
+- **Several at once on a desktop.** Up to four conversations side by side or in a 2×2 grid, like herdr's own
+  split panes.
 - **Sessions on any Claude account.** Each pane keeps the account it runs as; arcdr only asks who you are on
   Tailscale.
 
@@ -136,9 +138,17 @@ The full format, every place, and a worked example: **[docs/mods.md](docs/mods.m
 
 </details>
 
+### On a desktop: up to four at once
+
 <p align="center">
-<img src="docs/images/desktop-light.png" width="80%" alt="arcdr on a desktop, Arcness Light theme" />
+<img src="docs/images/desktop-split.png" alt="arcdr on a desktop: four agents in a 2×2 grid, one of them waiting for an answer" />
 </p>
+
+Hover an agent in the list and press ⊞ — or Ctrl+click it (⌘+click on a Mac) — to open it beside the ones
+already open: two side by side, three with the first down the left, four in a 2×2 grid. A plain click puts
+the agent in the pane you are in, × closes a pane, and the layout is kept per device. A half-height pane
+waiting for an answer clears its frame so the question and the conversation both fit. On a phone, one at a
+time as before.
 
 ## Set up by hand
 
@@ -152,8 +162,8 @@ scripts/setup.sh mod      # optional: the starter mod
 ```
 
 It checks herdr, installs and logs in Tailscale, turns on tailnet HTTPS, installs Bun (checksum verified), runs
-the tests and builds, writes `~/.config/arcdr/env`, starts a systemd user service, and publishes it with
-`tailscale serve`.
+the tests and builds, writes `~/.config/arcdr/env`, starts a systemd user service that comes back by itself
+after a restart (on WSL it turns on linger for that), and publishes it with `tailscale serve`.
 
 **Just look around:** `bun install && bun run demo` — made-up agents on http://127.0.0.1:7430, no herdr needed.
 
