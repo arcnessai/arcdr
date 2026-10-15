@@ -14,7 +14,7 @@ The first public release.
 - **Desktop panes**: up to four conversations at once.
 - **＋ tray**: key buttons, photos, camera, files, and your saved commands.
 - **Sessions**: start, resume and close from the phone.
-- **Web Push**, six themes, four languages.
+- **Web Push**, six themes, text size and typeface per device, four languages.
 - **herdr plugin**: `herdr plugin install arcnessai/arcdr` adds panes to set it up and to open it on your
   phone with a QR code.
 - **Setup**: `scripts/setup.sh` or the `arcdr-setup` skill; Tailscale identity only, loopback bind.

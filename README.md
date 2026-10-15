@@ -176,7 +176,7 @@ Found a problem? Report it privately — [SECURITY.md](SECURITY.md).
 | **Sessions** | Start one in any folder (optionally with a first message), resume an earlier conversation, close one |
 | **Notifications** | Web Push when an agent needs you or finishes, when a mod sends `notify`, or when a value matches your rule |
 | **Panes** | On a desktop, up to four conversations at once: ⊞ on an agent (or Ctrl+click) opens it beside the others — two side by side, three, or a 2×2 grid; kept per device |
-| **Looks** | Phone and desktop layouts; themes: Auto, Dracula, Light, Arcness, Arcness Light, Nord; English, 한국어, 日本語, 简体中文 |
+| **Looks** | Phone and desktop layouts; themes: Auto, Dracula, Light, Arcness, Arcness Light, Nord; text size in five steps and the device's own typefaces (default, serif, monospace), per device; English, 한국어, 日本語, 简体中文 |
 
 </details>
 

@@ -3,7 +3,19 @@ import type { Health } from "./api";
 import { t } from "./i18n";
 import { LangPicker } from "./langpicker";
 import { DisplayInfo } from "./parts";
-import { currentTheme, setTheme, THEMES, type ThemeId } from "./theme";
+import {
+  currentFont,
+  currentTextSize,
+  currentTheme,
+  FONTS,
+  setFont,
+  setTextSize,
+  setTheme,
+  TEXT_SIZES,
+  THEMES,
+  type FontId,
+  type ThemeId,
+} from "./theme";
 import { useContext } from "preact/hooks";
 import { readPush, savePrefs, sendTest, turnOff, turnOn, type PushState } from "./push";
 import { qrModules } from "./qr";
@@ -149,6 +161,57 @@ function ThemeSection() {
   );
 }
 
+/** Typeface and size, per device: a phone held at arm's length and a desktop monitor want different ones. */
+function TextSection() {
+  const [font, pickFont] = useState<FontId>(currentFont());
+  const [size, pickSize] = useState(currentTextSize());
+  return (
+    <section class="settings-card">
+      <h2>{t.text}</h2>
+      <div class="edit-field">
+        <span class="edit-label">{t.font}</span>
+        <div class="edit-choices" role="radiogroup" aria-label={t.font}>
+          {FONTS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              role="radio"
+              class={`font-option font-${f}`}
+              aria-checked={font === f}
+              onClick={() => {
+                setFont(f);
+                pickFont(f);
+              }}
+            >
+              {t.fonts[f]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div class="edit-field">
+        <span class="edit-label">{t.textSize}</span>
+        <div class="edit-choices" role="radiogroup" aria-label={t.textSize}>
+          {TEXT_SIZES.map((v, i) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={size === v}
+              onClick={() => {
+                setTextSize(v);
+                pickSize(v);
+              }}
+            >
+              {t.textSizes[i]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p class="text-preview">{t.textPreview}</p>
+    </section>
+  );
+}
+
 function DisplaySection() {
   const info = useContext(DisplayInfo);
   return (
@@ -176,6 +239,7 @@ export function SettingsView({ health }: { health: Health | null }) {
         <Notifications />
       </section>
       <ThemeSection />
+      <TextSection />
       <DisplaySection />
       <section class="settings-card">
         <h2>{t.language}</h2>

@@ -46,3 +46,53 @@ export function setTheme(id: ThemeId) {
 }
 
 applyTheme(currentTheme());
+
+/** Typefaces already on the device (web/style.css holds the stacks) and text sizes, kept per device. */
+export const FONTS = ["system", "serif", "mono"] as const;
+export type FontId = (typeof FONTS)[number];
+export const TEXT_SIZES = [0.9, 1, 1.12, 1.25, 1.4] as const;
+
+function stored(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function keep(key: string, value: string | null) {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    /* private mode: it holds for this visit */
+  }
+}
+
+export function currentFont(): FontId {
+  const v = stored("font");
+  return FONTS.includes(v as FontId) ? (v as FontId) : "system";
+}
+
+export function currentTextSize(): number {
+  const v = Number(stored("textSize"));
+  return TEXT_SIZES.includes(v as (typeof TEXT_SIZES)[number]) ? v : 1;
+}
+
+function applyText(font: FontId, size: number) {
+  const root = document.documentElement;
+  if (font === "system") delete root.dataset.font;
+  else root.dataset.font = font;
+  root.style.setProperty("--text-scale", String(size));
+}
+
+export function setFont(font: FontId) {
+  keep("font", font === "system" ? null : font);
+  applyText(font, currentTextSize());
+}
+
+export function setTextSize(size: number) {
+  keep("textSize", size === 1 ? null : String(size));
+  applyText(currentFont(), size);
+}
+
+applyText(currentFont(), currentTextSize());

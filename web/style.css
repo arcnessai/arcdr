@@ -21,8 +21,18 @@
   --accent: var(--purple);
   --accent-ink: #17121f;
   --user-bubble: #2e2846;
-  --font: system-ui, -apple-system, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", Roboto, sans-serif;
+  /* Typefaces already on the device: nothing is downloaded. Settings → Text picks one; code stays --mono. */
+  --font-system: system-ui, -apple-system, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", Roboto, sans-serif;
+  --font-serif: "Noto Serif KR", "Noto Serif CJK KR", "Nanum Myeongjo", AppleMyungjo, Batang, Georgia, serif;
   --mono: "JetBrains Mono", "D2Coding", "Cascadia Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font: var(--font-system);
+  --text-scale: 1;
+}
+:root[data-font="serif"] {
+  --font: var(--font-serif);
+}
+:root[data-font="mono"] {
+  --font: var(--mono);
 }
 
 @media (prefers-color-scheme: light) {
@@ -162,7 +172,7 @@ body {
   background-repeat: no-repeat;
   background-attachment: fixed;
   color: var(--text);
-  font: 15px/1.5 var(--font);
+  font: calc(15px * var(--text-scale)) / 1.5 var(--font);
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
 }
@@ -285,7 +295,7 @@ p {
   display: inline-grid;
   place-items: center;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   font-weight: 800;
   line-height: 1;
 }
@@ -370,7 +380,7 @@ p {
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 600;
   white-space: nowrap;
 }
@@ -381,7 +391,7 @@ p {
 .chip .dot {
   width: 14px;
   height: 14px;
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale));
 }
 
 .tone-yellow {
@@ -451,7 +461,7 @@ p {
   padding: 1px 8px;
   border-radius: 999px;
   background: var(--surface-2);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   white-space: nowrap;
 }
 .part-badge {
@@ -494,7 +504,7 @@ p {
   border-radius: 999px;
   background: var(--surface);
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 600;
   cursor: pointer;
 }
@@ -522,7 +532,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .todo-list li {
   display: flex;
@@ -548,7 +558,7 @@ p {
   gap: 4px 12px;
   flex-wrap: wrap;
   padding: 0 4px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .part-right {
   margin-left: auto;
@@ -577,7 +587,7 @@ p {
 }
 .connect-brand h1 {
   margin: 0;
-  font-size: 19px;
+  font-size: calc(19px * var(--text-scale));
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -598,7 +608,7 @@ p {
   gap: 10px;
 }
 .machine-name {
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale));
   font-weight: 700;
 }
 .machine-tag {
@@ -607,21 +617,21 @@ p {
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .machine-line {
   color: var(--muted);
 }
 .machine-hint {
   color: var(--dim);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
 }
 .check {
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
   cursor: pointer;
 }
 .check input {
@@ -631,7 +641,7 @@ p {
 }
 .connect-foot {
   color: var(--dim);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 
 .lang-picker {
@@ -639,7 +649,7 @@ p {
   align-items: center;
   gap: 8px;
   color: var(--dim);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .lang-picker select {
   padding: 5px 8px;
@@ -678,7 +688,7 @@ p {
 }
 .topbar-title h1 {
   margin: 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--text-scale));
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -686,7 +696,7 @@ p {
 }
 .topbar-machine {
   color: var(--dim);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .scroll {
   flex: 1;
@@ -724,12 +734,12 @@ p {
   gap: 6px;
 }
 .space-name {
-  font-size: 17px;
+  font-size: calc(17px * var(--text-scale));
   font-weight: 700;
 }
 .space-meta {
   color: var(--muted);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .row-chev {
   flex: none;
@@ -756,7 +766,7 @@ p {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: right;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
   line-height: 22px;
 }
 .agent-row .dot {
@@ -795,7 +805,7 @@ p {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 /* One line, like herdr's sidebar: what does not fit is cut, never wrapped under. */
 .parts.row-sub,
@@ -848,7 +858,7 @@ p {
   padding: 7px 12px;
   background: color-mix(in srgb, var(--orange) 15%, var(--bg));
   color: var(--orange);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   font-weight: 600;
 }
 
@@ -892,7 +902,7 @@ p {
 .side-label {
   margin: 16px 16px 6px;
   color: var(--dim);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -957,7 +967,7 @@ p {
 }
 .settings-card h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale));
   font-weight: 700;
 }
 .settings-card .btn-block,
@@ -970,7 +980,7 @@ p {
   flex-direction: column;
   gap: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .field input,
 .field textarea {
@@ -981,7 +991,7 @@ p {
   background: var(--bg);
   color: var(--text);
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale));
 }
 .field input:focus,
 .field textarea:focus {
@@ -1023,7 +1033,7 @@ p {
 .past-at {
   flex: none;
   color: var(--dim);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .side-label-row {
   display: flex;
@@ -1075,7 +1085,7 @@ p {
 }
 .settings-line {
   color: var(--muted);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
 }
 .settings-line.ok {
   color: var(--green);
@@ -1124,7 +1134,7 @@ p {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale));
   font-weight: 700;
 }
 .chat-sub {
@@ -1133,7 +1143,7 @@ p {
   gap: 8px;
   margin-top: 1px;
   color: var(--dim);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .status-pill {
   flex: none;
@@ -1144,7 +1154,7 @@ p {
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 650;
 }
 .status-pill.st-blocked {
@@ -1223,7 +1233,7 @@ p {
 }
 .pending-state {
   color: var(--dim);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 .is-queued .pending-state {
   color: var(--yellow);
@@ -1242,7 +1252,7 @@ p {
   align-self: center;
   max-width: 90%;
   color: var(--dim);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   text-align: center;
   white-space: pre-wrap;
 }
@@ -1293,7 +1303,7 @@ p {
 .tools {
   align-self: stretch;
   color: var(--muted);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .tools-head {
   width: 100%;
@@ -1324,7 +1334,7 @@ p {
   white-space: nowrap;
   color: var(--dim);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .tools-last b {
   color: var(--muted);
@@ -1349,7 +1359,7 @@ p {
   background: none;
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   text-align: left;
   cursor: pointer;
 }
@@ -1374,7 +1384,7 @@ p {
   background: var(--surface);
   color: var(--text);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1382,7 +1392,7 @@ p {
 .diff-stats {
   flex: none;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1402,7 +1412,7 @@ p {
   border-radius: 10px;
   background: var(--bg);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   line-height: 1.5;
 }
 .diff-block + .diff-block {
@@ -1440,7 +1450,7 @@ p {
   color: var(--dim);
   background: var(--surface);
   font-family: var(--font);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
 }
 .diff-note {
   padding: 6px 10px;
@@ -1484,7 +1494,7 @@ p {
   padding: 0 4px;
   color: var(--dim);
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   overflow-wrap: anywhere;
 }
 .change-where {
@@ -1501,12 +1511,12 @@ p {
   font-family: var(--mono);
 }
 .change-name {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   font-weight: 650;
 }
 .change-dir {
   color: var(--dim);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
 }
 .change-new {
   flex: none;
@@ -1514,7 +1524,7 @@ p {
   border-radius: 999px;
   background: color-mix(in srgb, var(--green) 16%, transparent);
   color: var(--green);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   font-weight: 650;
 }
 .seg-count {
@@ -1522,7 +1532,7 @@ p {
   padding: 0 6px;
   border-radius: 999px;
   background: var(--line-strong);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 
 .to-bottom {
@@ -1537,7 +1547,7 @@ p {
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   background: var(--surface-2);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   font-weight: 650;
   box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
   cursor: pointer;
@@ -1579,7 +1589,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   line-height: 1.5;
 }
 .md-code code {
@@ -1626,7 +1636,7 @@ p {
 .md-table table {
   min-width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .md-table th,
 .md-table td {
@@ -1681,7 +1691,7 @@ a.link code {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: var(--surface-2);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   text-align: center;
 }
 
@@ -1702,7 +1712,7 @@ a.link code {
 }
 .menu-badge {
   color: var(--pink);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 700;
 }
 .menu-context {
@@ -1714,7 +1724,7 @@ a.link code {
   background: var(--bg);
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1760,7 +1770,7 @@ a.link code {
   border-radius: 7px;
   background: var(--surface-2);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 700;
 }
 .choice.at-cursor .choice-n {
@@ -1779,7 +1789,7 @@ a.link code {
 }
 .choice-detail {
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .choice-box {
   margin-right: 6px;
@@ -1803,7 +1813,7 @@ a.link code {
   border-radius: 9px;
   background: var(--surface);
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   cursor: pointer;
 }
 .key:active {
@@ -1832,7 +1842,7 @@ a.link code {
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
 }
 .upload-thumb {
   display: block;
@@ -1880,7 +1890,7 @@ a.link code {
 }
 .sg-value {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1900,11 +1910,11 @@ a.link code {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .sg-kind {
   color: var(--dim);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
 }
 .composer textarea {
   flex: 1;
@@ -1952,14 +1962,15 @@ a.link code {
   background: var(--bg);
   color: var(--text);
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   line-height: 1.35;
   white-space: pre;
 }
 
 @media (pointer: coarse) {
   .composer textarea {
-    font-size: 16px;
+    /* An iPhone zooms into a field whose text is under 16px: never below that, whatever the size chosen. */
+    font-size: max(16px, calc(16px * var(--text-scale)));
   }
 }
 
@@ -1968,14 +1979,14 @@ a.link code {
   .screen {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale));
   }
 }
 
 @media (min-width: 900px) {
   html,
   body {
-    font-size: 14px;
+    font-size: calc(14px * var(--text-scale));
   }
   .chat-head {
     padding: 12px 20px;
@@ -1989,7 +2000,7 @@ a.link code {
   }
   .screen {
     padding: 16px 20px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--text-scale));
   }
   .dock {
     padding: 10px 20px 14px;
@@ -2031,7 +2042,7 @@ a.link code {
   flex: 1;
 }
 .theme-name {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   font-weight: 650;
 }
 
@@ -2059,7 +2070,7 @@ a.link code {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .file-body {
   flex: 1;
@@ -2067,7 +2078,7 @@ a.link code {
   overflow: auto;
   padding: 10px 0 calc(16px + env(safe-area-inset-bottom));
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   line-height: 1.5;
   counter-reset: line;
 }
@@ -2089,7 +2100,7 @@ a.link code {
 .file-note {
   padding: 10px 14px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .file-note.warn {
   color: var(--orange);
@@ -2101,7 +2112,7 @@ a.link code {
   border-radius: 999px;
   background: transparent;
   color: var(--cyan);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   cursor: pointer;
 }
 .code-link {
@@ -2175,7 +2186,7 @@ a.link code {
   border-radius: 12px;
   background: var(--bg);
   color: var(--text);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
   cursor: pointer;
 }
 .tile svg {
@@ -2198,18 +2209,18 @@ a.link code {
   align-items: center;
   justify-content: space-between;
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 .tray-head .link-btn {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   padding: 0;
 }
 .tray-hint {
   margin: 0;
   color: var(--dim);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .shortcuts {
   display: flex;
@@ -2227,7 +2238,7 @@ a.link code {
   border-radius: 999px;
   background: var(--bg);
   color: var(--text);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale));
   cursor: pointer;
 }
 .shortcut:hover {
@@ -2236,7 +2247,7 @@ a.link code {
 .shortcut.is-command .shortcut-name {
   color: var(--purple);
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .shortcut-name {
   min-width: 0;
@@ -2288,7 +2299,7 @@ a.link code {
 .shortcut-row-text {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2308,7 +2319,7 @@ a.link code {
 .shortcut-form textarea {
   resize: vertical;
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
 }
 .shortcut-form .btn {
   height: 40px;
@@ -2410,7 +2421,7 @@ a.link code {
 }
 .value-name {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   font-weight: 700;
   color: var(--purple);
 }
@@ -2420,7 +2431,7 @@ a.link code {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--muted);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
 }
 .value-sample.is-quiet {
   color: var(--dim);
@@ -2431,7 +2442,7 @@ a.link code {
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale));
   white-space: nowrap;
 }
 .value-place.at-none {
@@ -2451,7 +2462,7 @@ a.link code {
 }
 .edit-label {
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .edit-choices {
   display: flex;
@@ -2465,7 +2476,7 @@ a.link code {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   cursor: pointer;
 }
 .edit-choices button[aria-checked="true"] {
@@ -2516,7 +2527,7 @@ a.link code {
   flex: 1;
   min-width: 0;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale));
 }
 .editor-note.warn {
   color: var(--red);
@@ -2659,7 +2670,7 @@ a.link code {
 }
 .other-device-url {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   overflow-wrap: anywhere;
 }
 /* While the agent works, the send button stops it. */
@@ -2670,4 +2681,23 @@ a.link code {
 .send-btn.stop-btn:disabled {
   opacity: 0.55;
   cursor: progress;
+}
+
+/* Settings → Text: each typeface choice is drawn in its own face */
+.font-option.font-system {
+  font-family: var(--font-system);
+}
+.font-option.font-serif {
+  font-family: var(--font-serif);
+}
+.font-option.font-mono {
+  font-family: var(--mono);
+}
+.text-preview {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  background: var(--bg);
 }
