@@ -136,6 +136,11 @@ const DROP_USER = /^<(task-notification|system-reminder|local-command-caveat)>/;
 /** What a person typed, with the harness's wrappers taken off; null when the entry is not a typed message. */
 export function userText(raw: string): { kind: "user" | "note"; text: string } | null {
   let text = raw.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, "").trim();
+  // A long or many-line paste is kept wrapped as pasted content; the words are the person's all the same.
+  text = text
+    .replace(/<\\?pasted_content(?: id="[^"]*")?>\n?/g, "")
+    .replace(/\n?<\/pasted_content(?: id="[^"]*")?>/g, "")
+    .trim();
   if (!text) return null;
   const command = /<command-name>([^<]*)<\/command-name>/.exec(text);
   if (command) {

@@ -20,7 +20,7 @@ export interface Backend {
   snapshot(): Promise<Snapshot>;
   subscribe(fn: (event: "snapshot" | "down", data: string) => void): () => void;
   readScreen(pane: string): Promise<string>;
-  /** Submit text plus Enter as herdr does for agents; throws HerdrError when herdr refuses. */
+  /** Types text and presses Enter, as the person would (herdr.ts typeMessage); throws HerdrError when herdr refuses. */
   prompt(pane: string, text: string): Promise<void>;
   sendInput(pane: string, text: string, keys: string[]): Promise<void>;
   sendKeys(pane: string, keys: string[]): Promise<void>;
@@ -109,7 +109,6 @@ const ALLOWED_KEYS = new Set([
 ]);
 
 /** agent.prompt errors after which nothing was sent, so typing the text instead cannot send it twice. */
-const PROMPT_FALLBACK = new Set(["agent_not_ready", "agent_not_found"]);
 
 const MAX_BODY = 64 * 1024;
 const MAX_TEXT = 20_000;
@@ -409,14 +408,10 @@ export function createApp({ backend, machine, distDir, gate, push, display, save
 
     if (action === "send") {
       const text = textField(b, "text");
-      try {
-        await backend.prompt(pane, text);
-      } catch (e) {
-        // agent.prompt refuses when herdr no longer sees the agent as the pane's foreground process;
-        // typing the text the way `pane run` does still reaches whatever is reading the terminal.
-        if (!(e instanceof HerdrError) || !PROMPT_FALLBACK.has(e.code)) throw e;
-        await backend.sendInput(pane, text, ["enter"]);
-      }
+      // A question or a permission prompt on the screen would take typed keys as its answer: those go
+      // through choose, and free text into such a dialog through type.
+      if (agent.status === "blocked") throw new HttpError(409, "agent_blocked", "the agent is waiting for an answer");
+      await backend.prompt(pane, text);
       return json(200, { ok: true });
     }
 

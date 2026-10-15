@@ -265,3 +265,11 @@ describe("session settings in the transcript", () => {
     });
   });
 });
+
+describe("a pasted message", () => {
+  test("shows as the person's words, without the pasted-content wrapper", () => {
+    const raw = '\n\n<pasted_content id="82a5">\n둘째 줄까지\n있는 메시지\n</pasted_content id="82a5">\n';
+    expect(userText(raw)).toEqual({ kind: "user", text: "둘째 줄까지\n있는 메시지" });
+    expect(userText('<\\pasted_content id="760c">\n가끔 이렇게')).toEqual({ kind: "user", text: "가끔 이렇게" });
+  });
+});

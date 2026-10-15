@@ -160,4 +160,11 @@ describe("routes", () => {
     expect((await post("/api/agents/w1:p1/move", { before: null })).status).toBe(200);
     expect(moves).toEqual(["w1:p1>end"]);
   });
+
+  test("a message is not typed into a screen waiting for an answer", async () => {
+    const { post } = setup();
+    const res = await post("/api/agents/w1:p1/send", { text: "hello" });
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe("agent_blocked");
+  });
 });

@@ -4,7 +4,7 @@ import { createApp, type Backend } from "./app";
 import { completeFile, filterSlash, slashCommands } from "./complete";
 import { loadConfig } from "./config";
 import { existsSync, statSync } from "node:fs";
-import { closePane, createTab, HerdrError, moveTab, prompt, readScreen, sendInput, sendKeys, startClaude } from "./herdr";
+import { closePane, createTab, HerdrError, moveTab, readScreen, sendInput, sendKeys, startClaude, typeMessage } from "./herdr";
 import { pastSessions } from "./sessions";
 import { SnapshotHub } from "./hub";
 import { displayLoader, saveDisplay } from "./display";
@@ -21,7 +21,7 @@ const herdrBackend: Backend = {
   snapshot: () => hub.current(),
   subscribe: (fn) => hub.subscribe(fn),
   readScreen: (pane) => readScreen(cfg.socketPath, pane),
-  prompt: (pane, text) => prompt(cfg.socketPath, pane, text),
+  prompt: (pane, text) => typeMessage(cfg.socketPath, pane, text),
   sendInput: (pane, text, keys) => sendInput(cfg.socketPath, pane, text, keys),
   sendKeys: (pane, keys) => sendKeys(cfg.socketPath, pane, keys),
   transcript(agent, offset, file) {

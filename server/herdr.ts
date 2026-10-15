@@ -162,8 +162,43 @@ export async function readScreen(socketPath: string, pane: string): Promise<stri
 }
 
 /** Submits text plus Enter the way herdr does for agents (bracketed paste when the terminal wants it). */
-export async function prompt(socketPath: string, pane: string, text: string): Promise<void> {
-  await call(socketPath, "agent.prompt", { target: pane, text });
+/** Pieces small enough that Claude Code takes them as typing, not as one burst it would mark as pasted. */
+const TYPE_CHUNK = 80;
+const TYPE_GAP_MS = 12;
+
+/**
+ * What typing `text` means for a terminal prompt: lines, each in small pieces, joined by Ctrl+J (a new line
+ * that does not send). A tab would open completion, so it becomes spaces; a message ending in an @path
+ * gets a space, or Enter would pick the completion instead of sending.
+ */
+export function typingPlan(text: string): { lines: string[][] } {
+  let body = text.replace(/\r\n?/g, "\n").replace(/\t/g, "  ");
+  if (/(^|\s)@\S*$/.test(body)) body += " ";
+  const lines = body.split("\n").map((line) => {
+    const chars = Array.from(line);
+    const pieces: string[] = [];
+    for (let i = 0; i < chars.length; i += TYPE_CHUNK) pieces.push(chars.slice(i, i + TYPE_CHUNK).join(""));
+    return pieces;
+  });
+  return { lines };
+}
+
+/**
+ * Sends a message by typing it and pressing Enter. agent.prompt pastes it instead, and Claude Code keeps a
+ * long or many-line paste as pasted content — text the model weighs as material the person brought, not
+ * as what they asked. Typed, it is the person's own message.
+ */
+export async function typeMessage(socketPath: string, pane: string, text: string): Promise<void> {
+  const { lines } = typingPlan(text);
+  for (const [i, pieces] of lines.entries()) {
+    if (i > 0) await call(socketPath, "pane.send_keys", { pane_id: pane, keys: ["ctrl+j"] });
+    for (const piece of pieces) {
+      await call(socketPath, "pane.send_text", { pane_id: pane, text: piece });
+      await new Promise((r) => setTimeout(r, TYPE_GAP_MS));
+    }
+  }
+  await new Promise((r) => setTimeout(r, 150));
+  await call(socketPath, "pane.send_keys", { pane_id: pane, keys: ["enter"] });
 }
 
 export async function sendKeys(socketPath: string, pane: string, keys: string[]): Promise<void> {
