@@ -27,7 +27,7 @@ if (!result.success) {
 for (const name of ["index.html", "sw.js"]) {
   writeFileSync(join(dist, name), readFileSync(join(web, name), "utf8").replaceAll("__VERSION__", version));
 }
-for (const name of ["style.css", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png"]) {
+for (const name of ["style.css", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png", "badge-96.png"]) {
   copyFileSync(join(web, name), join(dist, name));
 }
 

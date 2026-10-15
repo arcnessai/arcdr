@@ -64,7 +64,8 @@ self.addEventListener("push", (event) => {
       tag: data.tag,
       renotify: Boolean(data.tag),
       icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      // The status-bar icon: Android uses only its alpha, so it is white dots on transparency.
+      badge: "/badge-96.png",
       data: { url: data.url || "/#/" },
     }),
   );

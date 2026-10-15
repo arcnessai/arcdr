@@ -2,6 +2,8 @@
 
 Run once after changing the design: python3 scripts/icons.py
 The dots sit inside the central 60% so the 512 icon also works as a maskable icon.
+badge-96.png is the notification's status-bar icon: Android draws only its alpha, in white, so it is the
+dots alone on transparency — an opaque icon there is a plain white square.
 """
 
 import struct
@@ -47,8 +49,38 @@ def draw(size: int) -> bytes:
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
 
 
+BADGE_DOTS = [(0.18, 0.5), (0.5, 0.5), (0.82, 0.5)]
+BADGE_RADIUS = 0.115
+
+
+def draw_badge(size: int) -> bytes:
+    """White dots on transparency, anti-aliased through the alpha channel."""
+    rows = []
+    step = 1 / (size * SAMPLES)
+    for py in range(size):
+        row = bytearray([0])
+        for px in range(size):
+            hit = 0
+            for sy in range(SAMPLES):
+                for sx in range(SAMPLES):
+                    x, y = px / size + (sx + 0.5) * step, py / size + (sy + 0.5) * step
+                    if any((x - cx) ** 2 + (y - cy) ** 2 <= BADGE_RADIUS**2 for cx, cy in BADGE_DOTS):
+                        hit += 1
+            row += bytes((255, 255, 255, 255 * hit // (SAMPLES * SAMPLES)))
+        rows.append(bytes(row))
+    raw = b"".join(rows)
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+    header = struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+
+
 if __name__ == "__main__":
     out = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent / "web")
     for size in (192, 512):
         (out / f"icon-{size}.png").write_bytes(draw(size))
         print(f"wrote {out / f'icon-{size}.png'}")
+    (out / "badge-96.png").write_bytes(draw_badge(96))
+    print(f"wrote {out / 'badge-96.png'}")

@@ -51,7 +51,8 @@ const html = readFileSync(join(web, "index.html"), "utf8")
   )
   .replaceAll("__VERSION__", version);
 writeFileSync(join(out, "index.html"), html);
-for (const name of ["style.css", "icon.svg", "icon-192.png", "icon-512.png"]) copyFileSync(join(web, name), join(out, name));
+for (const name of ["style.css", "icon.svg", "icon-192.png", "icon-512.png", "badge-96.png"])
+  copyFileSync(join(web, name), join(out, name));
 
 const size = readdirSync(out).reduce((n, f) => n + statSync(join(out, f)).size, 0);
 console.log(
