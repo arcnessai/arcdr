@@ -1,0 +1,15 @@
+name: An idea
+description: Something you would like arcdr to do, or a mod value you would like to see on the phone
+labels: [idea]
+body:
+  - type: textarea
+    id: want
+    attributes:
+      label: What you want to do
+      description: The situation first — what you were doing and what was missing.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How it could look

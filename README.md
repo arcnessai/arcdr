@@ -15,9 +15,11 @@ Answer its questions and keep it moving from your phone or any other computer, o
 [![Bun](https://img.shields.io/badge/Bun-1.4-f2a65e?style=flat-square)](https://bun.sh)
 [![License: MIT](https://img.shields.io/badge/license-MIT-50fa7b?style=flat-square)](LICENSE)
 
+**[▶ Try it in your browser](https://arcnessai.github.io/arcdr/)** — made-up agents, nothing to install
+
 **English** · [한국어](README.ko.md)
 
-<img src="docs/images/hero.png" alt="arcdr on a laptop and a phone: the agent list, a question with tap-to-answer choices, the band a mod reports" />
+<img src="docs/images/demo.gif" alt="arcdr in 20 seconds: answering a waiting agent with a tap, opening two more beside it, and placing a mod's value from Settings" />
 
 </div>
 
@@ -36,9 +38,17 @@ service, hands you the two links only you can open (the Tailscale login and its 
 anything that is yours to decide. At the end it offers the starter mod, so the phone shows more than the chat
 from the first minute.
 
+**From herdr:** `herdr plugin install arcnessai/arcdr` adds two panes to herdr — **Set up arcdr** runs the same
+setup, waiting for you at each link, and **Open arcdr on your phone** shows the address as a QR code.
+
 <a id="on-the-phone"></a>
-**On the phone:** Tailscale app on with the same account → open `https://<machine>.<tailnet>.ts.net` in Chrome →
+**On the phone:** Tailscale app on with the same account → scan the QR code (herdr's pane, or **Settings → Open on
+another device** in a browser that already has arcdr) or open `https://<machine>.<tailnet>.ts.net` in Chrome →
 **Install app**. Another computer: Tailscale on, open the same address.
+
+<p align="center">
+<img src="docs/images/hero.png" width="90%" alt="arcdr on a laptop and a phone: the agent list, a question with tap-to-answer choices, the band a mod reports" />
+</p>
 
 ## Built around herdr and your mods
 
@@ -79,6 +89,17 @@ Same values, same places, the way you arranged them.
 </td>
 </tr>
 </table>
+
+### Why another herdr client?
+
+There are good phone clients for herdr already. arcdr is the one to pick if:
+
+- **you use Claude Code mods**, or want herdr's own sidebar rows on the phone — arcdr draws what your mods
+  report where you place it, and lets a mod ring your phone;
+- **you run several Claude accounts** side by side — each pane keeps its own;
+- **you want the narrowest way in** — loopback only, your Tailscale identity checked on every request, no tokens to
+  pair, store or leak, no relay;
+- **you also sit at a desktop** — four conversations at once, the same app.
 
 ### Four ways to put something on the phone
 
@@ -130,7 +151,7 @@ The full format, every place, and a worked example: **[docs/mods.md](docs/mods.m
 | **Changes** | Each edit as a diff, every file the conversation touched, a file viewer |
 | **Keys** | Esc, arrows, Tab, ⇧Tab, Enter; Ctrl+C is left out on purpose (twice exits Claude Code) |
 | **Screen** | The terminal as it is now, wrapped for a phone |
-| **Session** | Permission-mode and model chips, interrupt, `/compact`, `/context`, `/usage`, rewind, `/clear` |
+| **Session** | A stop button where send is while the agent works (Esc ends its turn); permission-mode and model chips, `/compact`, `/context`, `/usage`, rewind, `/clear` |
 | **Sessions** | Start one in any folder (optionally with a first message), resume an earlier conversation, close one |
 | **Notifications** | Web Push when an agent needs you or finishes, when a mod sends `notify`, or when a value matches your rule |
 | **Panes** | On a desktop, up to four conversations at once: ⊞ on an agent (or Ctrl+click) opens it beside the others — two side by side, three, or a 2×2 grid; kept per device |
@@ -246,6 +267,9 @@ scripts/setup.sh build && scripts/setup.sh service   # rebuild and restart your 
 `server/` — Bun server: `app.ts` routes over a `Backend`, `main.ts` wires herdr. `web/` — the Preact page.
 `mods/arcdr-report/` — the starter mod (`claude plugin test .` inside it). To test input, use a separate herdr
 session (`herdr --session test server`), never the panes you work in.
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Found a security problem? Please report it
+privately ([SECURITY.md](SECURITY.md)). Changes per release: [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

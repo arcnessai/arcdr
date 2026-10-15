@@ -1,0 +1,26 @@
+name: Something does not work
+description: A screen that looks wrong, an answer that did not reach the agent, a setup step that fails
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it
+      description: The steps, and a screenshot if it is on screen.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: herdr version, arcdr build (Settings → Connection, or /api/health), phone or browser
+  - type: textarea
+    id: log
+    attributes:
+      label: Server log, if relevant
+      description: "`journalctl --user -u arcdr -n 50` — take out anything private"
+      render: text
