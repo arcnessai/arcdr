@@ -1024,14 +1024,6 @@ export function ChatView(props: {
               {toast}
             </p>
           )}
-          <SessionChips
-            agent={agent}
-            mode={screen.mode ?? chat.meta.permissionMode ?? "default"}
-            model={chat.meta.model ?? null}
-            todos={chat.todos}
-            onRefresh={() => void screen.refresh()}
-            onError={setToast}
-          />
           {spec.band?.map((row, i) => (
             <PartRow key={i} row={row} of={agent} />
           ))}
@@ -1111,57 +1103,6 @@ function ActionsMenu({ agent, queued, onError }: { agent: Agent; queued: number;
 export function modelName(id: string): string {
   const m = /^claude-([a-z]+)-(\d+)-(\d+)/.exec(id);
   return m ? `${m[1]![0]!.toUpperCase()}${m[1]!.slice(1)} ${m[2]}.${m[3]}` : id;
-}
-
-/** Permission mode, model and checklist — the session's settings as chips, each one a tap from changing. */
-function SessionChips(props: {
-  agent: Agent;
-  mode: string;
-  model: string | null;
-  todos: Todos | null;
-  onRefresh: () => void;
-  onError: (m: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const pane = props.agent.pane;
-  const act = (work: () => Promise<unknown>) =>
-    work()
-      .then(() => setTimeout(props.onRefresh, 350))
-      .catch((e) => props.onError(e instanceof ApiError ? e.message : String(e)));
-  const done = props.todos?.filter((x) => x.status === "completed").length ?? 0;
-  return (
-    <div class="session-chips">
-      <button
-        class={`session-chip mode-${props.mode}`}
-        onClick={() => act(() => api.keys(pane, ["shift+tab"]))}
-        title={t.cycleMode}
-      >
-        {t.modes[props.mode as keyof typeof t.modes] ?? props.mode}
-      </button>
-      {props.model && (
-        <button class="session-chip" onClick={() => act(() => api.send(pane, "/model"))} title={t.pickModel}>
-          {modelName(props.model)}
-        </button>
-      )}
-      {props.todos && props.todos.length > 0 && (
-        <button class="session-chip" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {t.todos} {done}/{props.todos.length}
-        </button>
-      )}
-      {open && props.todos && (
-        <ul class="todo-list">
-          {props.todos.map((x, i) => (
-            <li key={i} class={`todo-${x.status}`}>
-              <span class="todo-box" aria-hidden="true">
-                {x.status === "completed" ? "✓" : x.status === "in_progress" ? "◐" : "○"}
-              </span>
-              {x.text}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
 }
 
 function ScreenPane({ text }: { text: string }) {

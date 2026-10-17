@@ -491,39 +491,6 @@ p {
   border-radius: 999px;
   background: currentColor;
 }
-.session-chips {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 0 4px;
-}
-.session-chip {
-  padding: 3px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: calc(12px * var(--text-scale));
-  font-weight: 600;
-  cursor: pointer;
-}
-.session-chip:hover {
-  color: var(--text);
-}
-.session-chip.mode-bypassPermissions {
-  border-color: color-mix(in srgb, var(--red) 55%, var(--line));
-  color: var(--red);
-}
-.session-chip.mode-acceptEdits,
-.session-chip.mode-auto {
-  border-color: color-mix(in srgb, var(--purple) 55%, var(--line));
-  color: var(--purple);
-}
-.session-chip.mode-plan {
-  border-color: color-mix(in srgb, var(--cyan) 55%, var(--line));
-  color: var(--cyan);
-}
 .todo-list {
   width: 100%;
   margin: 2px 0 0;
@@ -2641,8 +2608,7 @@ a.link code {
   padding: 7px 10px;
 }
 /* While a half-height pane waits for an answer, the question gets the room the mode chips and band had. */
-.chat.is-compact .dock:has(.menu-panel) > .part-row,
-.chat.is-compact .dock:has(.menu-panel) > .session-chips {
+.chat.is-compact .dock:has(.menu-panel) > .part-row {
   display: none;
 }
 
