@@ -3,12 +3,19 @@ import { basename, join } from "node:path";
 
 /**
  * Turns a Claude Code transcript (one JSON entry per line under ~/.claude/projects/<dir>/<session>.jsonl)
- * into the items a chat view draws. Thinking, sidechains (subagents), meta entries and hook output are left out.
+ * into the items a chat view draws. Sidechains (subagents), meta entries and hook output are left out, and so is
+ * thinking, except the short progress lines the terminal shows as it works (see "thinking" below).
  */
 
 export type ChatItem =
   | { id: string; kind: "user"; text: string; at: string | null }
   | { id: string; kind: "assistant"; text: string; at: string | null }
+  /**
+   * A progress line from a thinking block. An entry marked thinkingDisplay "updates" is one whose thinking the
+   * terminal prints inline as the agent works, so the same words are shown here; other thinking, and empty
+   * blocks (only a signature), stay out.
+   */
+  | { id: string; kind: "thinking"; text: string; at: string | null }
   | { id: string; kind: "tool"; name: string; summary: string; detail: string; change?: FileChange; at: string | null }
   | { id: string; kind: "ask"; questions: AskQuestion[]; at: string | null }
   /** code names a note the screen words itself, in its own language. */
@@ -260,11 +267,14 @@ export function parseEntries(lines: string[]): ChatItem[] {
         lastModel = model;
         items.push({ id: `model:${id}`, kind: "meta", model });
       }
+      const updates = e.thinkingDisplay === "updates";
       arr(message.content)
         .map(obj)
         .forEach((b, i) => {
           if (b.type === "text" && str(b.text).trim()) {
             items.push({ id: `${id}:${i}`, kind: "assistant", text: str(b.text).trim(), at });
+          } else if (b.type === "thinking" && updates && str(b.thinking).trim()) {
+            items.push({ id: `${id}:${i}`, kind: "thinking", text: str(b.thinking).trim(), at });
           } else if (b.type === "tool_use") {
             const name = str(b.name);
             const input = obj(b.input);

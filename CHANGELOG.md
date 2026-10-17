@@ -22,3 +22,5 @@ The first public release.
   person's own request rather than as pasted material.
 - **The right conversation**: a pane shows the session of its own interactive Claude Code, even when an
   unattended job started from it reported another one to herdr.
+- **Thinking as the terminal shows it**: the short progress lines Claude Code prints while it thinks appear in
+  the chat too, in lighter text.

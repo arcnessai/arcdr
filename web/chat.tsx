@@ -301,6 +301,12 @@ function Message({
           <LongText text={item.text} latest={latest} />
         </div>
       );
+    case "thinking":
+      return (
+        <div class="msg msg-thinking">
+          <LongText text={item.text} latest={false} />
+        </div>
+      );
     case "ask":
       return (
         <div class="msg ask-card">

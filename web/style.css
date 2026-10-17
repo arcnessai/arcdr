@@ -1232,6 +1232,11 @@ p {
   align-self: stretch;
   overflow-wrap: anywhere;
 }
+.msg-thinking {
+  align-self: stretch;
+  overflow-wrap: anywhere;
+  color: var(--dim);
+}
 .msg-note {
   align-self: center;
   max-width: 90%;

@@ -224,6 +224,36 @@ describe("fileChange", () => {
   });
 });
 
+describe("thinking", () => {
+  const block = (thinking: string) => ({ type: "thinking", thinking, signature: "sig" });
+
+  test("progress lines the terminal prints inline are shown; empty blocks are not", () => {
+    const items = parseEntries([
+      line({
+        type: "assistant",
+        uuid: "a1",
+        thinkingDisplay: "updates",
+        message: { content: [block("  Checking the tests next.  ")] },
+      }),
+      line({ type: "assistant", uuid: "a2", thinkingDisplay: "updates", message: { content: [block("")] } }),
+      line({
+        type: "assistant",
+        uuid: "a3",
+        thinkingDisplay: "updates",
+        message: { content: [{ type: "text", text: "Done." }] },
+      }),
+    ]);
+    expect(items).toEqual([
+      { id: "a1:0", kind: "thinking", text: "Checking the tests next.", at: null },
+      { id: "a3:0", kind: "assistant", text: "Done.", at: null },
+    ]);
+  });
+
+  test("thinking from an entry not marked for inline display stays out", () => {
+    expect(parseEntries([line({ type: "assistant", uuid: "a1", message: { content: [block("not shown")] } })])).toEqual([]);
+  });
+});
+
 describe("session settings in the transcript", () => {
   test("permission mode, model (once per change) and the TodoWrite checklist", () => {
     const items = parseEntries([
