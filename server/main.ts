@@ -7,6 +7,7 @@ import { existsSync, statSync } from "node:fs";
 import { closePane, createTab, HerdrError, moveTab, readScreen, sendInput, sendKeys, startClaude, typeMessage } from "./herdr";
 import { pastSessions } from "./sessions";
 import { SnapshotHub } from "./hub";
+import { herdrProcesses, LiveSessions } from "./live";
 import { displayLoader, saveDisplay } from "./display";
 import { loadVapid, notification, Notifier, PushStore, webPushDeliver } from "./push";
 import { findTranscript, readFrom, readTail } from "./transcript";
@@ -14,7 +15,9 @@ import { ShortcutStore } from "./shortcuts";
 import { sweepUploads } from "./uploads";
 
 const cfg = loadConfig();
-const hub = new SnapshotHub(cfg.socketPath);
+// A pane's session read from its own Claude Code, not only from what herdr was told (server/live.ts).
+const live = new LiveSessions(herdrProcesses(cfg.socketPath), join(process.env.HOME ?? "/root", ".claude", "sessions"));
+const hub = new SnapshotHub(cfg.socketPath, 1000, (snap) => live.apply(snap));
 const home = process.env.HOME ?? "/root";
 
 const herdrBackend: Backend = {

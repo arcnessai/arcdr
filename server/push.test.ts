@@ -150,3 +150,28 @@ describe("notify from a mod", () => {
     expect(bodies).toEqual(["yes: Tests failed: 3"]);
   });
 });
+
+describe("the same words from several panes", () => {
+  test("ring once; other words still ring", async () => {
+    const store = new PushStore(join(dir, "e.json"));
+    store.save(sub("https://fcm.googleapis.com/fcm/send/yes"));
+    const bodies: string[] = [];
+    const n = new Notifier(store, async (_s, payload) => void bodies.push(JSON.parse(payload).body));
+    const pane = (id: string, notify?: string) => ({
+      ...agent(id, "working"),
+      tokens: notify ? { notify } : ({} as Record<string, string>),
+    });
+    n.observe(snap(pane("w1:p1"), pane("w1:p2"), pane("w1:p3")));
+    n.observe(snap(pane("w1:p1", "auto-mode — plan: ROW-B 넘김"), pane("w1:p2"), pane("w1:p3")));
+    n.observe(snap(pane("w1:p1", "auto-mode — plan: ROW-B 넘김"), pane("w1:p2", "auto-mode — plan: ROW-B 넘김"), pane("w1:p3")));
+    n.observe(
+      snap(
+        pane("w1:p1", "auto-mode — plan: ROW-B 넘김"),
+        pane("w1:p2", "auto-mode — plan: ROW-B 넘김"),
+        pane("w1:p3", "build done"),
+      ),
+    );
+    await Bun.sleep(0);
+    expect(bodies).toEqual(["auto-mode — plan: ROW-B 넘김", "build done"]);
+  });
+});

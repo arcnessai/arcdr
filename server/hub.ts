@@ -17,6 +17,8 @@ export class SnapshotHub {
   constructor(
     private socketPath: string,
     private intervalMs = 1000,
+    /** A last step on each snapshot, such as the panes' live sessions (server/live.ts). */
+    private refine: (snap: Snapshot) => Promise<Snapshot> = async (snap) => snap,
   ) {}
 
   subscribe(fn: Listener): () => void {
@@ -38,7 +40,7 @@ export class SnapshotHub {
   /** A snapshot no older than maxAgeMs, fetched if the cached one is stale. */
   async current(maxAgeMs = 800): Promise<Snapshot> {
     if (this.last && Date.now() - this.last.at <= maxAgeMs) return this.last.snap;
-    const snap = await snapshot(this.socketPath);
+    const snap = await this.refine(await snapshot(this.socketPath));
     this.last = { at: Date.now(), snap };
     return snap;
   }

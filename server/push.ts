@@ -118,6 +118,8 @@ export function eventFor(prev: AgentStatus, next: AgentStatus): Exclude<PushEven
 
 /** Messages a mod sends on purpose are each worth hearing; the window only stops a loop from flooding the phone. */
 const NOTIFY_QUIET_MS = 5_000;
+/** The same words from other panes inside this long are the same news (a mod polls on its own clock, ≤ 30 s apart here). */
+const SAME_WORDS_MS = 90_000;
 
 export type Deliver = (sub: PushSubscriptionRecord, payload: string, urgent: boolean) => Promise<void>;
 
@@ -145,7 +147,10 @@ export class Notifier {
       // A mod or a hook asking for the phone in so many words: each new value is one notification.
       const said = a.tokens[NOTIFY_TOKEN]?.trim();
       if (said && said !== prev.tokens[NOTIFY_TOKEN]?.trim()) {
-        void this.notify(a, { body: said.slice(0, 200) }, `${a.pane}:notify`, NOTIFY_QUIET_MS);
+        const body = said.slice(0, 200);
+        // Several sessions can say the same words — a mod that watches something they share, each reporting
+        // to its own pane a little apart: the phone hears them once.
+        if (this.isFresh(`said:${body}`, SAME_WORDS_MS)) void this.notify(a, { body }, `${a.pane}:notify`, NOTIFY_QUIET_MS);
       }
       // A mod's value starting to meet an alert's conditions rings — the change, not the value standing still.
       alerts.forEach((alert, i) => {
@@ -157,6 +162,14 @@ export class Notifier {
       });
     }
     this.primed = true;
+  }
+
+  /** Whether `key` was not seen within `ms`; it counts as seen from now. */
+  private isFresh(key: string, ms: number): boolean {
+    const now = Date.now();
+    if (now - (this.sentAt.get(key) ?? 0) < ms) return false;
+    this.sentAt.set(key, now);
+    return true;
   }
 
   async notify(agent: Agent, event: Exclude<PushEvent, "custom"> | { body: string }, key: string, quietMs = this.quietMs) {
