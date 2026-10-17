@@ -18,3 +18,7 @@ The first public release.
 - **herdr plugin**: `herdr plugin install arcnessai/arcdr` adds panes to set it up and to open it on your
   phone with a QR code.
 - **Setup**: `scripts/setup.sh` or the `arcdr-setup` skill; Tailscale identity only, loopback bind.
+- **Your words stay yours**: messages are typed into the pane, not pasted, so Claude Code takes them as the
+  person's own request rather than as pasted material.
+- **The right conversation**: a pane shows the session of its own interactive Claude Code, even when an
+  unattended job started from it reported another one to herdr.
