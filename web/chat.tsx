@@ -1025,7 +1025,7 @@ export function ChatView(props: {
             </p>
           )}
           {spec.band?.map((row, i) => (
-            <PartRow key={i} row={row} of={agent} />
+            <PartRow key={i} row={row} of={agent} band />
           ))}
           {answering && <MenuPanel {...answering} />}
           {(keysOpen || tab === "screen") && <KeyBar pane={pane} onError={setToast} />}

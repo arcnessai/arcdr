@@ -212,7 +212,7 @@ export function DisplayEditor({ agents }: { agents: Agent[] }) {
               <AgentRow agent={subject} selected={false} />
               <div class="preview-dock">
                 {draft.band?.map((row, i) => (
-                  <PartRow key={i} row={row} of={subject} />
+                  <PartRow key={i} row={row} of={subject} band />
                 ))}
                 <div class="preview-input">{t.message}</div>
                 {draft.footer && <PartRow row={draft.footer} of={subject} />}

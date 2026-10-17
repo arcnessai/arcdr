@@ -163,9 +163,9 @@ export function Parts({ parts, of, class: cls }: { parts?: Part[]; of: Subject; 
 }
 
 /** A row with a left and a right side, like a mod's band or footer line. */
-export function PartRow({ row, of }: { row: Row; of: Subject }) {
+export function PartRow({ row, of, band }: { row: Row; of: Subject; band?: boolean }) {
   return (
-    <div class="part-row">
+    <div class={`part-row${band ? " is-band" : ""}`}>
       <Parts parts={row.left} of={of} class="part-left" />
       <Parts parts={row.right} of={of} class="part-right" />
     </div>

@@ -531,6 +531,23 @@ p {
   margin-left: auto;
   justify-content: flex-end;
 }
+/* In the band above the message box the right side keeps its place on the first line, and a long left side
+   wraps beside it rather than pushing the right side onto a line of its own (a narrow phone did). */
+.part-row.is-band {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.part-row.is-band .part-left {
+  flex: 1 1 0;
+}
+.part-row.is-band .part-left .part {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.part-row.is-band .part-right {
+  flex: none;
+  max-width: 60%;
+}
 .tree .part-badge {
   color: inherit;
 }
