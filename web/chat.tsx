@@ -347,6 +347,36 @@ function Message({
   }
 }
 
+/**
+ * "Select all" on a message selects that message. On a phone the browser's own select-all takes the whole page,
+ * every message and the bars around them, when the person long-pressed one message to copy it.
+ */
+function useSelectAllInMessage(box: { current: HTMLDivElement | null }) {
+  useEffect(() => {
+    let pressed: Element | null = null;
+    const down = (e: Event) => {
+      const row = e.target instanceof Element ? e.target.closest(".messages-inner > *") : null;
+      pressed = row && box.current?.contains(row) ? (row.querySelector(".bubble") ?? row) : null;
+    };
+    const change = () => {
+      const sel = document.getSelection();
+      const el = box.current;
+      if (!pressed || !el || !sel || sel.isCollapsed || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      // Only a selection that runs past the messages on both sides: what select-all makes, never a drag.
+      if (el.contains(range.startContainer) || el.contains(range.endContainer)) return;
+      if (!sel.containsNode(pressed, true)) return;
+      sel.selectAllChildren(pressed);
+    };
+    document.addEventListener("pointerdown", down, true);
+    document.addEventListener("selectionchange", change);
+    return () => {
+      document.removeEventListener("pointerdown", down, true);
+      document.removeEventListener("selectionchange", change);
+    };
+  }, []);
+}
+
 function Messages(props: {
   rows: Row[];
   failed: Set<string>;
@@ -360,6 +390,7 @@ function Messages(props: {
   const box = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
   const [behind, setBehind] = useState(false);
+  useSelectAllInMessage(box);
 
   const onScroll = () => {
     const el = box.current!;

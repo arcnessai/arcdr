@@ -203,7 +203,8 @@ export function parseEntries(lines: string[]): ChatItem[] {
     const message = obj(e.message);
 
     if (e.type === "user") {
-      if (e.isMeta === true) continue;
+      // The summary /compact leaves is written as a user entry; the compact_boundary before it is the note.
+      if (e.isMeta === true || e.isCompactSummary === true) continue;
       const content = message.content;
       if (typeof content === "string") {
         const t = userText(content);

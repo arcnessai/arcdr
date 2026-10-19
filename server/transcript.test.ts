@@ -224,6 +224,26 @@ describe("fileChange", () => {
   });
 });
 
+describe("compaction", () => {
+  test("the summary /compact writes as a user entry is not shown as the person's message", () => {
+    const items = parseEntries([
+      line({ type: "system", uuid: "s1", subtype: "compact_boundary" }),
+      line({
+        type: "user",
+        uuid: "u1",
+        isCompactSummary: true,
+        isVisibleInTranscriptOnly: true,
+        message: { role: "user", content: "This session is being continued from a previous conversation…" },
+      }),
+      line({ type: "user", uuid: "u2", message: { role: "user", content: "계속해" } }),
+    ]);
+    expect(items.map((i) => [i.kind, "text" in i ? i.text : ""])).toEqual([
+      ["note", ""],
+      ["user", "계속해"],
+    ]);
+  });
+});
+
 describe("thinking", () => {
   const block = (thinking: string) => ({ type: "thinking", thinking, signature: "sig" });
 
