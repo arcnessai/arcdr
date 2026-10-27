@@ -1,6 +1,6 @@
 import { render, type ComponentChildren } from "preact";
 import "./theme";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { api, type Agent, type Health, type LoadedDisplay, type Snapshot } from "./api";
 import { DisplayContext, DisplayInfo, DisplaySet } from "./parts";
 import { DisplayEditor } from "./displayedit";
@@ -83,6 +83,12 @@ function useStored(key: string, initial: string): [string, (v: string) => void] 
 }
 
 type Live = "waiting" | "up" | "lost" | "herdr-down";
+
+/**
+ * How long the stream may be down before the page says so. A phone drops it whenever the screen turns off, the
+ * app is switched or the carrier moves its address, and the browser reconnects by itself within seconds.
+ */
+const LOST_AFTER_MS = 8_000;
 
 declare const __BUILD__: string;
 
@@ -205,6 +211,9 @@ function Screens() {
   const [machine, setMachine] = useStored("machine", "PC");
   const [auto, setAuto] = useStored("autoconnect", "0");
   const [stream, setStream] = useState(0);
+  const reopens = useRef(0);
+  /** When the stream last went down, kept across the streams opened again so that their waits add up. */
+  const downSince = useRef<number | null>(null);
 
   const probe = useCallback(async () => {
     setConn("checking");
@@ -231,13 +240,32 @@ function Screens() {
   useEffect(() => {
     if (conn !== "online") return;
     const es = new EventSource("/api/events");
+    let lost: ReturnType<typeof setTimeout> | undefined;
+    let reopen: ReturnType<typeof setTimeout> | undefined;
     es.addEventListener("snapshot", (e) => {
+      clearTimeout(lost);
+      lost = undefined;
+      reopens.current = 0;
+      downSince.current = null;
       setSnap(JSON.parse((e as MessageEvent<string>).data));
       setLive("up");
     });
     es.addEventListener("down", () => setLive("herdr-down"));
-    es.onerror = () => setLive("lost");
-    return () => es.close();
+    es.onerror = () => {
+      const since = (downSince.current ??= Date.now());
+      lost ??= setTimeout(() => setLive("lost"), Math.max(0, since + LOST_AFTER_MS - Date.now()));
+      // The browser gives up for good after a refused response (a proxy's 502 while the tunnel rebinds), so a
+      // closed stream is opened again here, waiting longer each time.
+      if (es.readyState === EventSource.CLOSED && reopen === undefined) {
+        const wait = Math.min(30_000, 1_000 * 2 ** reopens.current++);
+        reopen = setTimeout(() => setStream((n) => n + 1), wait);
+      }
+    };
+    return () => {
+      clearTimeout(lost);
+      clearTimeout(reopen);
+      es.close();
+    };
   }, [conn, stream]);
 
   useEffect(() => {
